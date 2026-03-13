@@ -3,10 +3,10 @@ Description: DynamoDB table for storing file metadata.
 
 Resources:
 
-  MyFilesTable:
+  ApiFiles:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: FileApiFiles
+      TableName: Files
       AttributeDefinitions:
         - AttributeName: fileId
           AttributeType: S
@@ -31,4 +31,4 @@ Outputs:
 
   FilesTableName:
     Description: DynamoDB table name
-    Value: !Ref FileApiFiles
+    Value: !Ref ApiFiles

@@ -12,8 +12,6 @@ Resources:
         - email
       AutoVerifiedAttributes:
         - email
-      AliasAttributes:
-        - email
       Policies:
         PasswordPolicy:
           MinimumLength: 8
@@ -21,27 +19,43 @@ Resources:
           RequireLowercase: true
           RequireNumbers: true
           RequireSymbols: false
-      MfaConfiguration: OFF
+      MfaConfiguration: "OFF"
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: false
       AccountRecoverySetting:
         RecoveryMechanisms:
           - Name: verified_email
             Priority: 1
-      Tags:
-        - Key: Environment
-          Value: Dev
+      UserPoolTags:
+        Environment: Dev
 
   # App Client
   MyUserPoolClient:
     Type: AWS::Cognito::UserPoolClient
     Properties:
-      ClientName: MyFileAppClient
+      ClientName: FileApiClient
       UserPoolId: !Ref MyUserPool
       GenerateSecret: false
       ExplicitAuthFlows:
         - ADMIN_NO_SRP_AUTH
         - USER_PASSWORD_AUTH
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthScopes:
+        - email
+        - openid
+        - profile
+      SupportedIdentityProviders:
+        - COGNITO
+      CallbackURLs:
+        - http://localhost:8080/login
+      LogoutURLs:
+        - http://localhost:8080/logout
+      TokenValidityUnits:
+        RefreshToken: days
+        AccessToken: minutes
+        IdToken: minutes
       RefreshTokenValidity: 30
       AccessTokenValidity: 60
       IdTokenValidity: 60
@@ -50,7 +64,7 @@ Resources:
   MyUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
-      Domain: myfileapp-login-demo        # URL do Hosted UI: https://myfileapp-login-demo.auth.REGION.amazoncognito.com
+      Domain: !Sub "fileapi-${AWS::AccountId}-${AWS::Region}-dev5310"
       UserPoolId: !Ref MyUserPool
 
 Outputs:
@@ -65,4 +79,4 @@ Outputs:
 
   CognitoDomain:
     Description: Hosted UI Domain
-    Value: !GetAtt MyUserPoolDomain.Domain
+    Value: !Ref MyUserPoolDomain
