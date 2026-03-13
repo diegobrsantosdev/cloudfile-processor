@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: S3 bucket for MVP file storage.
+
+Resources:
+
+  MyFileBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub fileapi-storage-${AWS::AccountId}-dev    # nome do bucket (único globalmente)
+      VersioningConfiguration:
+        Status: Enabled                      # habilita versionamento (histórico de arquivos)
+      PublicAccessBlockConfiguration:        # bloqueia acesso público por segurança
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Environment
+          Value: Dev
+
+Outputs:
+
+  FileBucketName:
+    Description: Nome do bucket criado
+    Value: !Ref MyFileBucket

@@ -1,0 +1,34 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: DynamoDB table for storing file metadata.
+
+Resources:
+
+  MyFilesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: FileApiFiles                   # nome da tabela
+      AttributeDefinitions:
+        - AttributeName: fileId
+          AttributeType: S                 # HASH key (string)
+        - AttributeName: userId
+          AttributeType: S                 # atributo para índice secundário
+      KeySchema:
+        - AttributeName: fileId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: UserIdIndex            # permite consultar arquivos por usuário
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      BillingMode: PAY_PER_REQUEST
+      Tags:
+          - Key: Environment
+            Value: Dev
+
+Outputs:
+
+  FilesTableName:
+    Description: DynamoDB table name
+    Value: !Ref FileApiFiles
