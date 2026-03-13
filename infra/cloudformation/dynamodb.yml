@@ -6,17 +6,17 @@ Resources:
   MyFilesTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: FileApiFiles                   # nome da tabela
+      TableName: FileApiFiles
       AttributeDefinitions:
         - AttributeName: fileId
-          AttributeType: S                 # HASH key (string)
+          AttributeType: S
         - AttributeName: userId
-          AttributeType: S                 # atributo para índice secundário
+          AttributeType: S
       KeySchema:
         - AttributeName: fileId
           KeyType: HASH
       GlobalSecondaryIndexes:
-        - IndexName: UserIdIndex            # permite consultar arquivos por usuário
+        - IndexName: UserIdIndex
           KeySchema:
             - AttributeName: userId
               KeyType: HASH
