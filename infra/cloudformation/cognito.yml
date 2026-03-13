@@ -9,11 +9,11 @@ Resources:
     Properties:
       UserPoolName: FileApiUserPool
       UsernameAttributes:
-        - email                       # login por email
+        - email
       AutoVerifiedAttributes:
-        - email                       # email é verificado automaticamente
+        - email
       AliasAttributes:
-        - email                       # login case insensitive
+        - email
       Policies:
         PasswordPolicy:
           MinimumLength: 8
@@ -21,9 +21,9 @@ Resources:
           RequireLowercase: true
           RequireNumbers: true
           RequireSymbols: false
-      MfaConfiguration: OFF             # MFA desligado para MVP
+      MfaConfiguration: OFF
       AdminCreateUserConfig:
-        AllowAdminCreateUserOnly: false # habilita self sign-up
+        AllowAdminCreateUserOnly: false
       AccountRecoverySetting:
         RecoveryMechanisms:
           - Name: verified_email
@@ -38,13 +38,13 @@ Resources:
     Properties:
       ClientName: MyFileAppClient
       UserPoolId: !Ref MyUserPool
-      GenerateSecret: false               # sem client secret para MVP
+      GenerateSecret: false
       ExplicitAuthFlows:
-        - ADMIN_NO_SRP_AUTH               # opcional, permite login via API interna
-        - USER_PASSWORD_AUTH              # login normal
-      RefreshTokenValidity: 30            # em dias
-      AccessTokenValidity: 60             # em minutos
-      IdTokenValidity: 60                 # em minutos
+        - ADMIN_NO_SRP_AUTH
+        - USER_PASSWORD_AUTH
+      RefreshTokenValidity: 30
+      AccessTokenValidity: 60
+      IdTokenValidity: 60
 
   # Domain para Hosted UI
   MyUserPoolDomain:

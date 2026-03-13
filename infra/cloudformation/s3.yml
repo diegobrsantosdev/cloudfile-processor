@@ -6,10 +6,10 @@ Resources:
   MyFileBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub fileapi-storage-${AWS::AccountId}-dev    # nome do bucket (único globalmente)
+      BucketName: !Sub fileapi-storage-${AWS::AccountId}-dev
       VersioningConfiguration:
-        Status: Enabled                      # habilita versionamento (histórico de arquivos)
-      PublicAccessBlockConfiguration:        # bloqueia acesso público por segurança
+        Status: Enabled
+      PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
         IgnorePublicAcls: true
@@ -21,5 +21,5 @@ Resources:
 Outputs:
 
   FileBucketName:
-    Description: Nome do bucket criado
+    Description: Bucket name created
     Value: !Ref MyFileBucket
