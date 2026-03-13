@@ -1,0 +1,68 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: User Pool, App Client, and Domain for the file storage system MVP.
+
+Resources:
+
+  # User Pool
+  MyUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: FileApiUserPool
+      UsernameAttributes:
+        - email                       # login por email
+      AutoVerifiedAttributes:
+        - email                       # email é verificado automaticamente
+      AliasAttributes:
+        - email                       # login case insensitive
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: false
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+      MfaConfiguration: OFF             # MFA desligado para MVP
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false # habilita self sign-up
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
+      Tags:
+        - Key: Environment
+          Value: Dev
+
+  # App Client
+  MyUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: MyFileAppClient
+      UserPoolId: !Ref MyUserPool
+      GenerateSecret: false               # sem client secret para MVP
+      ExplicitAuthFlows:
+        - ADMIN_NO_SRP_AUTH               # opcional, permite login via API interna
+        - USER_PASSWORD_AUTH              # login normal
+      RefreshTokenValidity: 30            # em dias
+      AccessTokenValidity: 60             # em minutos
+      IdTokenValidity: 60                 # em minutos
+
+  # Domain para Hosted UI
+  MyUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: myfileapp-login-demo        # URL do Hosted UI: https://myfileapp-login-demo.auth.REGION.amazoncognito.com
+      UserPoolId: !Ref MyUserPool
+
+Outputs:
+
+  CognitoUserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref MyUserPool
+
+  CognitoAppClientId:
+    Description: App Client Client ID
+    Value: !Ref MyUserPoolClient
+
+  CognitoDomain:
+    Description: Hosted UI Domain
+    Value: !GetAtt MyUserPoolDomain.Domain
