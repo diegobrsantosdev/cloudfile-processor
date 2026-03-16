@@ -1,12 +1,25 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: DynamoDB table for storing file metadata.
 
+Parameters:
+  ProjectName:
+    Type: String
+    Default: file-processor
+
+  EnvironmentName:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+
 Resources:
 
   ApiFiles:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: Files
+      TableName: !Sub "${ProjectName}-${EnvironmentName}-files"
       AttributeDefinitions:
         - AttributeName: fileId
           AttributeType: S
@@ -24,11 +37,24 @@ Resources:
             ProjectionType: ALL
       BillingMode: PAY_PER_REQUEST
       Tags:
-          - Key: Environment
-            Value: Dev
+        - Key: Name
+          Value: !Sub "${ProjectName}-${EnvironmentName}-files"
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: ManagedBy
+          Value: cloudformation
 
 Outputs:
-
   FilesTableName:
     Description: DynamoDB table name
     Value: !Ref ApiFiles
+    Export:
+      Name: !Sub "${AWS::StackName}-FilesTableName"
+
+  FilesTableArn:
+    Description: DynamoDB table ARN
+    Value: !GetAtt ApiFiles.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-FilesTableArn"
