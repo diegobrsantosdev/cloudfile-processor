@@ -1,12 +1,25 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: S3 bucket for MVP file storage.
+Description: S3 buckets for MVP file storage.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: file-processor
+
+  EnvironmentName:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
 
 Resources:
 
-  MyFileBucket:
+  InputBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub fileapi-storage-${AWS::AccountId}-dev
+      BucketName: !Sub "${ProjectName}-input-${AWS::AccountId}-${EnvironmentName}"
       VersioningConfiguration:
         Status: Enabled
       PublicAccessBlockConfiguration:
@@ -15,11 +28,57 @@ Resources:
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
       Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-${EnvironmentName}-input"
+        - Key: Project
+          Value: !Ref ProjectName
         - Key: Environment
-          Value: Dev
+          Value: !Ref EnvironmentName
+        - Key: ManagedBy
+          Value: cloudformation
+
+  OutputBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${ProjectName}-output-${AWS::AccountId}-${EnvironmentName}"
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-${EnvironmentName}-output"
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: ManagedBy
+          Value: cloudformation
 
 Outputs:
+  InputBucketName:
+    Description: Input bucket name
+    Value: !Ref InputBucket
+    Export:
+      Name: !Sub "${AWS::StackName}-InputBucketName"
 
-  FileBucketName:
-    Description: Bucket name created
-    Value: !Ref MyFileBucket
+  OutputBucketName:
+    Description: Output bucket name
+    Value: !Ref OutputBucket
+    Export:
+      Name: !Sub "${AWS::StackName}-OutputBucketName"
+
+  InputBucketArn:
+    Description: Input bucket ARN
+    Value: !GetAtt InputBucket.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-InputBucketArn"
+
+  OutputBucketArn:
+    Description: Output bucket ARN
+    Value: !GetAtt OutputBucket.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-OutputBucketArn"
