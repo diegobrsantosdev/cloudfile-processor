@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: >
+  Application Load Balancer for Cloudfile Processor API.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: file-processor
+
+  EnvironmentName:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+
+  ApiContainerPort:
+    Type: Number
+    Default: 8080
+
+  HealthCheckPath:
+    Type: String
+    Default: /actuator/health
+
+Resources:
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for public Application Load Balancer
+      VpcId:
+        Fn::ImportValue:
+          Fn::Sub: "${ProjectName}-network-${EnvironmentName}-VpcId"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub "${ProjectName}-${EnvironmentName}-alb"
+      Scheme: internet-facing
+      Type: application
+      IpAddressType: ipv4
+      SecurityGroups:
+        - !Ref ALBSecurityGroup
+      Subnets:
+        - Fn::ImportValue:
+            Fn::Sub: "${ProjectName}-network-${EnvironmentName}-PublicSubnetAId"
+        - Fn::ImportValue:
+            Fn::Sub: "${ProjectName}-network-${EnvironmentName}-PublicSubnetBId"
+
+  ApiTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub "${ProjectName}-${EnvironmentName}-api-tg"
+      VpcId:
+        Fn::ImportValue:
+          Fn::Sub: "${ProjectName}-network-${EnvironmentName}-VpcId"
+      Protocol: HTTP
+      Port: !Ref ApiContainerPort
+      TargetType: ip
+      HealthCheckEnabled: true
+      HealthCheckPath: !Ref HealthCheckPath
+      HealthCheckProtocol: HTTP
+      HealthCheckPort: traffic-port
+      Matcher:
+        HttpCode: 200
+
+  HttpListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ApiTargetGroup
