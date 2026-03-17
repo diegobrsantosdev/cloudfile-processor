@@ -1,13 +1,33 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: User Pool, App Client, and Domain for the file storage system MVP.
 
+Parameters:
+  ProjectName:
+    Type: String
+    Default: file-processor
+
+  EnvironmentName:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+
+  CallbackUrl:
+    Type: String
+    Default: http://localhost:8080/login
+
+  LogoutUrl:
+    Type: String
+    Default: http://localhost:8080/logout
+
 Resources:
 
-  # User Pool
   MyUserPool:
     Type: AWS::Cognito::UserPool
     Properties:
-      UserPoolName: FileApiUserPool
+      UserPoolName: !Sub "${ProjectName}-${EnvironmentName}-user-pool"
       UsernameAttributes:
         - email
       AutoVerifiedAttributes:
@@ -27,13 +47,14 @@ Resources:
           - Name: verified_email
             Priority: 1
       UserPoolTags:
-        Environment: Dev
+        Project: !Ref ProjectName
+        Environment: !Ref EnvironmentName
+        ManagedBy: cloudformation
 
-  # App Client
   MyUserPoolClient:
     Type: AWS::Cognito::UserPoolClient
     Properties:
-      ClientName: FileApiClient
+      ClientName: !Sub "${ProjectName}-${EnvironmentName}-client"
       UserPoolId: !Ref MyUserPool
       GenerateSecret: false
       ExplicitAuthFlows:
@@ -49,9 +70,9 @@ Resources:
       SupportedIdentityProviders:
         - COGNITO
       CallbackURLs:
-        - http://localhost:8080/login
+        - !Ref CallbackUrl
       LogoutURLs:
-        - http://localhost:8080/logout
+        - !Ref LogoutUrl
       TokenValidityUnits:
         RefreshToken: days
         AccessToken: minutes
@@ -60,23 +81,33 @@ Resources:
       AccessTokenValidity: 60
       IdTokenValidity: 60
 
-  # Domain para Hosted UI
   MyUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
-      Domain: !Sub "fileapi-${AWS::AccountId}-${AWS::Region}-dev5310"
+      Domain: !Sub "${ProjectName}-${AWS::AccountId}-${AWS::Region}-${EnvironmentName}"
       UserPoolId: !Ref MyUserPool
 
 Outputs:
-
   CognitoUserPoolId:
     Description: Cognito User Pool ID
     Value: !Ref MyUserPool
+    Export:
+      Name: !Sub "${AWS::StackName}-CognitoUserPoolId"
 
   CognitoAppClientId:
-    Description: App Client Client ID
+    Description: Cognito App Client ID
     Value: !Ref MyUserPoolClient
+    Export:
+      Name: !Sub "${AWS::StackName}-CognitoAppClientId"
 
   CognitoDomain:
-    Description: Hosted UI Domain
+    Description: Hosted UI Domain prefix
     Value: !Ref MyUserPoolDomain
+    Export:
+      Name: !Sub "${AWS::StackName}-CognitoDomain"
+
+  CognitoHostedUiUrl:
+    Description: Cognito Hosted UI base URL
+    Value: !Sub "https://${MyUserPoolDomain}.auth.${AWS::Region}.amazoncognito.com"
+    Export:
+      Name: !Sub "${AWS::StackName}-CognitoHostedUiUrl"
