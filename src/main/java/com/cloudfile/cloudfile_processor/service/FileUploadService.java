@@ -16,7 +16,6 @@ public class FileUploadService {
     private static final int URL_EXPIRATION_MINUTES = 15;
 
     public FileUploadResponse createUploadRequest(FileUploadRequest request){
-        validateRequest(request);
 
         String uploadId = generateUploadId();
         String s3Key = buildS3Key(request.userId(), uploadId, request.originalFileName());
@@ -28,24 +27,23 @@ public class FileUploadService {
 
     }
 
-
-    private void validateRequest(FileUploadRequest request) {
-        if (request == null){
-            throw new InvalidFileUploadRequestException("Upload request cant be null");
-        }
-        if (isBlank(request.userId())){
-            throw new InvalidFileUploadRequestException("UserId is required");
-        }
-        if (isBlank(request.originalFileName())){
-            throw new InvalidFileUploadRequestException("OriginalFile name is required");
-        }
-        if (isBlank(request.mimeType())){
-            throw new InvalidFileUploadRequestException("MimeType is required");
-        }
-        if (request.sizeInBytes() == null || request.sizeInBytes() <= 0) {
-            throw new InvalidFileUploadRequestException("sizeInBytes must be greater than 0.");
-        }
-    }
+//    private void validateRequest(FileUploadRequest request) {
+//        if (request == null){
+//            throw new InvalidFileUploadRequestException("Upload request cant be null");
+//        }
+//        if (isBlank(request.userId())){
+//            throw new InvalidFileUploadRequestException("UserId is required");
+//        }
+//        if (isBlank(request.originalFileName())){
+//            throw new InvalidFileUploadRequestException("OriginalFile name is required");
+//        }
+//        if (isBlank(request.mimeType())){
+//            throw new InvalidFileUploadRequestException("MimeType is required");
+//        }
+//        if (request.sizeInBytes() == null || request.sizeInBytes() <= 0) {
+//            throw new InvalidFileUploadRequestException("sizeInBytes must be greater than 0.");
+//        }
+//    }
 
     private String generateUploadId() {
         return UUID.randomUUID().toString();
