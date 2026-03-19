@@ -22,7 +22,7 @@ public class S3PresignedUrlService {
 
     public String generatePresignedUploadUrl(String s3Key) {
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                .bucket(s3Properties.bucketName())
+                .bucket(s3Properties.inputBucketName())
                 .key(s3Key)
                 .build();
 
