@@ -30,7 +30,7 @@ public class FileUploadService {
                 s3Key,
                 preSignedUrl,
                 expiresAt,
-                UploadStatus.UPLOADED
+                UploadStatus.PENDING
         );
     }
 
