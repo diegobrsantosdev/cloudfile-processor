@@ -6,7 +6,7 @@ import java.time.OffsetDateTime;
 
 public record FileUploadResponse(
         String uploadId,
-        String s3key,
+        String s3Key,
         String preSignedUrl,
         OffsetDateTime expiresAt,
         UploadStatus status
