@@ -1,0 +1,105 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: SSM Parameter Store values for Cloudfile Processor.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: file-processor
+
+  EnvironmentName:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+
+  AwsRegion:
+    Type: String
+    Default: us-east-1
+
+  CallbackUrl:
+    Type: String
+    Default: http://localhost:8080/login
+
+  LogoutUrl:
+    Type: String
+    Default: http://localhost:8080/logout
+
+  InputBucketExportName:
+    Type: String
+    Description: Export name of the input bucket from the S3 stack
+
+  OutputBucketExportName:
+    Type: String
+    Description: Export name of the output bucket from the S3 stack
+
+Resources:
+  AwsRegionParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ProjectName}/${EnvironmentName}/aws/region"
+      Type: String
+      Value: !Ref AwsRegion
+      Description: AWS region for the application
+
+  InputBucketNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ProjectName}/${EnvironmentName}/s3/input-bucket-name"
+      Type: String
+      Value: !ImportValue
+        Fn::Sub: "${InputBucketExportName}"
+      Description: Input bucket name
+
+  OutputBucketNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ProjectName}/${EnvironmentName}/s3/output-bucket-name"
+      Type: String
+      Value: !ImportValue
+        Fn::Sub: "${OutputBucketExportName}"
+      Description: Output bucket name
+
+  CallbackUrlParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ProjectName}/${EnvironmentName}/cognito/callback-url"
+      Type: String
+      Value: !Ref CallbackUrl
+      Description: Cognito callback URL
+
+  LogoutUrlParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ProjectName}/${EnvironmentName}/cognito/logout-url"
+      Type: String
+      Value: !Ref LogoutUrl
+      Description: Cognito logout URL
+
+  PresignedUrlExpirationMinutesParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ProjectName}/${EnvironmentName}/s3/presigned-url-expiration-minutes"
+      Type: String
+      Value: "15"
+      Description: Presigned URL expiration time in minutes
+
+Outputs:
+  AwsRegionParameterName:
+    Value: !Ref AwsRegionParameter
+
+  InputBucketNameParameterName:
+    Value: !Ref InputBucketNameParameter
+
+  OutputBucketNameParameterName:
+    Value: !Ref OutputBucketNameParameter
+
+  CallbackUrlParameterName:
+    Value: !Ref CallbackUrlParameter
+
+  LogoutUrlParameterName:
+    Value: !Ref LogoutUrlParameter
+
+  PresignedUrlExpirationMinutesParameterName:
+    Value: !Ref PresignedUrlExpirationMinutesParameter

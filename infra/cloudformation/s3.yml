@@ -58,6 +58,39 @@ Resources:
         - Key: ManagedBy
           Value: cloudformation
 
+  AppRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-${EnvironmentName}-app-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+                - ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: S3UploadPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource: !Sub "${InputBucket.Arn}/input/*"
+
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource: !Sub "${InputBucket.Arn}/*"
+
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource: !Sub "${OutputBucket.Arn}/*"
+
 Outputs:
   InputBucketName:
     Description: Input bucket name
@@ -82,3 +115,9 @@ Outputs:
     Value: !GetAtt OutputBucket.Arn
     Export:
       Name: !Sub "${AWS::StackName}-OutputBucketArn"
+
+  AppRoleArn:
+    Description: Application role ARN
+    Value: !GetAtt AppRole.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-AppRoleArn"
