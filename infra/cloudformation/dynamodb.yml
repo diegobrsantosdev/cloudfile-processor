@@ -21,13 +21,15 @@ Resources:
     Properties:
       TableName: !Sub "${ProjectName}-${EnvironmentName}-files"
       AttributeDefinitions:
-        - AttributeName: fileId
-          AttributeType: S
         - AttributeName: userId
           AttributeType: S
+        - AttributeName: fieldId
+          AttributeType: S
       KeySchema:
-        - AttributeName: fileId
+        - AttributeName: userId
           KeyType: HASH
+        - AttributeName: fieldId
+          KeyType: RANGE
       GlobalSecondaryIndexes:
         - IndexName: UserIdIndex
           KeySchema:
@@ -58,3 +60,18 @@ Outputs:
     Value: !GetAtt ApiFiles.Arn
     Export:
       Name: !Sub "${AWS::StackName}-FilesTableArn"
+
+
+      # --------------------------
+      # Item attributes (for reference)
+      # --------------------------
+      # userId      : String   -> ID of the user who owns the file (partition key)
+      # fileId      : String   -> Unique file ID (sort key)
+      # fileName    : String   -> Name of the file
+      # fileType    : String   -> File type / MIME type
+      # fileSize    : Number   -> File size in bytes
+      # uploadDate  : String   -> Upload date/time
+      # s3Key       : String   -> S3 path of the file
+      # status      : String   -> UPLOADED / PROCESSING / COMPLETED / FAILED / DELETED
+      # deletedAt   : String   -> Deletion timestamp (optional)
+
