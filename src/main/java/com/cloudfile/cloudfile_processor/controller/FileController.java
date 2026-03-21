@@ -2,6 +2,7 @@ package com.cloudfile.cloudfile_processor.controller;
 
 import com.cloudfile.cloudfile_processor.dto.FileUploadRequest;
 import com.cloudfile.cloudfile_processor.dto.FileUploadResponse;
+import com.cloudfile.cloudfile_processor.security.UserContext;
 import com.cloudfile.cloudfile_processor.service.FileUploadService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +17,7 @@ public class FileController {
 
     private final FileUploadService fileUploadService;
 
-    public FileController(FileUploadService fileUploadService) {
+    public FileController(FileUploadService fileUploadService, UserContext userContext) {
         this.fileUploadService = fileUploadService;
     }
 

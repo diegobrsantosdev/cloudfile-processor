@@ -6,9 +6,6 @@ import jakarta.validation.constraints.Positive;
 
 public record FileUploadRequest(
 
-        @NotBlank( message = "UserId is required")
-        String userId,
-
         @NotBlank( message = "OriginalFileName is required")
         String originalFileName,
 
