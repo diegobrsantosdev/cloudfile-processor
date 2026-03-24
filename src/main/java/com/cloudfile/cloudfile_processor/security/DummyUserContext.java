@@ -9,6 +9,6 @@ public class DummyUserContext implements UserContext{
 
     @Override
     public String getUserId() {
-        return "dummy-user";
+        return "user17";
     }
 }

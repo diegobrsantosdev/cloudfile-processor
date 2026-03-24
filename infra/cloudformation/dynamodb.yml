@@ -23,12 +23,12 @@ Resources:
       AttributeDefinitions:
         - AttributeName: userId
           AttributeType: S
-        - AttributeName: fieldId
+        - AttributeName: fileId
           AttributeType: S
       KeySchema:
         - AttributeName: userId
           KeyType: HASH
-        - AttributeName: fieldId
+        - AttributeName: fileId
           KeyType: RANGE
       GlobalSecondaryIndexes:
         - IndexName: UserIdIndex
@@ -48,6 +48,16 @@ Resources:
         - Key: ManagedBy
           Value: cloudformation
 
+  FilesTableNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ProjectName}/${EnvironmentName}/dynamodb/files-table-name"
+      Type: String
+      Value: !Sub "${ProjectName}-${EnvironmentName}-files"
+      Tags:
+        Project: !Ref ProjectName
+        Environment: !Ref EnvironmentName
+
 Outputs:
   FilesTableName:
     Description: DynamoDB table name
@@ -60,6 +70,11 @@ Outputs:
     Value: !GetAtt ApiFiles.Arn
     Export:
       Name: !Sub "${AWS::StackName}-FilesTableArn"
+
+  FilesTableSsmParameter:
+    Value: !Ref FilesTableNameParameter
+    Export:
+      Name: !Sub "${AWS::StackName}-FilesTableSsmParameterName"
 
 
       # --------------------------

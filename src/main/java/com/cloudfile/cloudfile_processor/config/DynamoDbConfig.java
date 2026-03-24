@@ -1,7 +1,11 @@
 package com.cloudfile.cloudfile_processor.config;
 
+import com.cloudfile.cloudfile_processor.model.FileMetadata;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -14,4 +18,23 @@ public class DynamoDbConfig {
                 .region(Region.of(awsProperties.region()))
                 .build();
     }
+
+    @Bean
+    public DynamoDbEnhancedClient dynamoDbEnhancedClient(DynamoDbClient dynamoDbClient) {
+        return DynamoDbEnhancedClient.builder()
+                .dynamoDbClient(dynamoDbClient)
+                .build();
+    }
+
+    @Bean
+    public DynamoDbTable<FileMetadata> fileTable(
+            DynamoDbEnhancedClient client,
+            DynamoDbProperties dynamoDbProperties
+    ) {
+        return client.table(
+                dynamoDbProperties.filesTableName(),
+                TableSchema.fromBean(FileMetadata.class)
+        );
+    }
+
 }

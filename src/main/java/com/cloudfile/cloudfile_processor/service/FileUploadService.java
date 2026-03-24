@@ -3,6 +3,8 @@ package com.cloudfile.cloudfile_processor.service;
 import com.cloudfile.cloudfile_processor.dto.FileUploadRequest;
 import com.cloudfile.cloudfile_processor.dto.FileUploadResponse;
 import com.cloudfile.cloudfile_processor.enums.UploadStatus;
+import com.cloudfile.cloudfile_processor.model.FileMetadata;
+import com.cloudfile.cloudfile_processor.repository.FileMetadataRepository;
 import com.cloudfile.cloudfile_processor.security.UserContext;
 import org.springframework.stereotype.Service;
 
@@ -15,11 +17,13 @@ public class FileUploadService {
 
     private final UserContext userContext;
     private final S3PresignedUrlService s3PresignedUrlService;
+    private final FileMetadataRepository fileMetaDataRepository;
     private static final int URL_EXPIRATION_MINUTES = 15;
 
-    public FileUploadService(S3PresignedUrlService s3PresignedUrlService, UserContext userContext) {
+    public FileUploadService(S3PresignedUrlService s3PresignedUrlService, UserContext userContext, FileMetadataRepository fileMetaDataRepository) {
         this.s3PresignedUrlService = s3PresignedUrlService;
         this.userContext = userContext;
+        this.fileMetaDataRepository = fileMetaDataRepository;
     }
 
     public FileUploadResponse createUploadRequest(FileUploadRequest request) {
@@ -35,6 +39,17 @@ public class FileUploadService {
 
         OffsetDateTime expiresAt = OffsetDateTime.now().plusMinutes(URL_EXPIRATION_MINUTES);
 
+        FileMetadata metadata = new FileMetadata();
+        metadata.setUserId(userId);
+        metadata.setFileId(uploadId);
+        metadata.setFileName(request.originalFileName());
+        metadata.setMimeType(request.mimeType());
+        metadata.setSizeInBytes(request.sizeInBytes());
+        metadata.setS3Key(s3Key);
+        metadata.setStatus(UploadStatus.PENDING.name());
+        metadata.setUploadDate(OffsetDateTime.now().toString());
+
+        fileMetaDataRepository.save(metadata);
 
         return new FileUploadResponse(
                 uploadId,
