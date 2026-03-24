@@ -1,0 +1,69 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: SQS Queue for file processing.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: file-processor
+
+  EnvironmentName:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+
+  InputBucketArn:
+    Type: String
+    Description: ARN of the input bucket, exported by the S3 stack
+
+Resources:
+
+  FileProcessingQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${ProjectName}-${EnvironmentName}-file-processing"
+      VisibilityTimeout: 300
+      MessageRetentionPeriod: 86400
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt FileProcessingDLQ.Arn
+        maxReceiveCount: 3
+
+  FileProcessingDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${ProjectName}-${EnvironmentName}-file-processing-dlq"
+      MessageRetentionPeriod: 1209600
+
+  FileProcessingQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref FileProcessingQueue
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: s3.amazonaws.com
+            Action: sqs:SendMessage
+            Resource: !GetAtt FileProcessingQueue.Arn
+            Condition:
+              ArnLike:
+                aws:SourceArn: !Ref InputBucketArn
+
+Outputs:
+  FileProcessingQueueUrl:
+    Value: !Ref FileProcessingQueue
+    Export:
+      Name: !Sub "${AWS::StackName}-QueueUrl"
+
+  FileProcessingQueueArn:
+    Value: !GetAtt FileProcessingQueue.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-QueueArn"
+
+  FileProcessingDLQUrl:
+    Value: !Ref FileProcessingDLQ
+    Export:
+      Name: !Sub "${AWS::StackName}-DLQUrl"

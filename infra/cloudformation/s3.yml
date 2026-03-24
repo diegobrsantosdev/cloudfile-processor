@@ -27,6 +27,17 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
+
+      NotificationConfiguration:
+        QueueConfigurations:
+          - Event: s3:ObjectCreated:*
+            Queue: !ImportValue file-processor-sqs-dev-QueueArn
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: input/
+
       Tags:
         - Key: Name
           Value: !Sub "${ProjectName}-${EnvironmentName}-input"
