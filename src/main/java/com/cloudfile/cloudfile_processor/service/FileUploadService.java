@@ -12,8 +12,6 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -81,42 +79,6 @@ public class FileUploadService {
 
     private String sanitizeFileName(String fileName) {
         return fileName.trim().replaceAll("\\s+", "_");
-    }
-
-    //used to get uploaded files by user and user history
-
-    private FileListResponse toFileListResponse(FileMetadata item) {
-        return new FileListResponse(
-                item.getFileId(),
-                item.getS3Key(),
-                item.getFileName(),
-                item.getMimeType(),
-                item.getSizeInBytes(),
-                item.getUploadDate(),
-                item.getStatus()
-        );
-    }
-    private List<FileListResponse> listFiles(String userId, boolean includeDeleted) {
-        QueryEnhancedRequest request = QueryEnhancedRequest.builder()
-                .queryConditional(QueryConditional.keyEqualTo(
-                        Key.builder().partitionValue(userId).build()
-                ))
-                .build();
-
-        return fileTable.query(request)
-                .stream()
-                .flatMap(page -> page.items().stream())
-                .filter(item -> includeDeleted || "UPLOADED".equals(item.getStatus()))
-                .map(this::toFileListResponse)
-                .toList();
-    }
-
-    public List<FileListResponse> listActiveFiles(String userId) {
-        return listFiles(userId, false);
-    }
-
-    public List<FileListResponse> listAllFiles(String userId) {
-        return listFiles(userId, true);
     }
 
 }
