@@ -4,20 +4,14 @@ import com.cloudfile.cloudfile_processor.dto.FileListResponse;
 import com.cloudfile.cloudfile_processor.dto.FileUploadRequest;
 import com.cloudfile.cloudfile_processor.dto.FileUploadResponse;
 import com.cloudfile.cloudfile_processor.enums.UploadStatus;
+import com.cloudfile.cloudfile_processor.exceptions.FileUploadProcessingException;
 import com.cloudfile.cloudfile_processor.model.FileMetadata;
 import com.cloudfile.cloudfile_processor.repository.FileMetadataRepository;
 import com.cloudfile.cloudfile_processor.security.UserContext;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
-import software.amazon.awssdk.enhanced.dynamodb.Key;
-import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
-import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 
 import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 
@@ -45,8 +39,12 @@ public class FileUploadService {
                 uploadId,
                 request.originalFileName());
 
-
-        String preSignedUrl = s3PresignedUrlService.generatePresignedUploadUrl(s3Key);
+        String preSignedUrl;
+        try {
+            preSignedUrl = s3PresignedUrlService.generatePresignedUploadUrl(s3Key);
+        } catch (Exception ex) {
+            throw new FileUploadProcessingException("Failed to generate upload URL");
+        }
 
         OffsetDateTime expiresAt = OffsetDateTime.now().plusMinutes(URL_EXPIRATION_MINUTES);
 
@@ -60,7 +58,11 @@ public class FileUploadService {
         metadata.setStatus(UploadStatus.PENDING.name());
         metadata.setUploadDate(OffsetDateTime.now().toString());
 
-        fileMetaDataRepository.save(metadata);
+        try {
+            fileMetaDataRepository.save(metadata);
+        } catch (Exception ex) {
+            throw new FileUploadProcessingException("Failed to save file metadata");
+        }
 
         return new FileUploadResponse(
                 uploadId,
@@ -81,42 +83,6 @@ public class FileUploadService {
 
     private String sanitizeFileName(String fileName) {
         return fileName.trim().replaceAll("\\s+", "_");
-    }
-
-    //used to get uploaded files by user and user history
-
-    private FileListResponse toFileListResponse(FileMetadata item) {
-        return new FileListResponse(
-                item.getFileId(),
-                item.getS3Key(),
-                item.getFileName(),
-                item.getMimeType(),
-                item.getSizeInBytes(),
-                item.getUploadDate(),
-                item.getStatus()
-        );
-    }
-    private List<FileListResponse> listFiles(String userId, boolean includeDeleted) {
-        QueryEnhancedRequest request = QueryEnhancedRequest.builder()
-                .queryConditional(QueryConditional.keyEqualTo(
-                        Key.builder().partitionValue(userId).build()
-                ))
-                .build();
-
-        return fileTable.query(request)
-                .stream()
-                .flatMap(page -> page.items().stream())
-                .filter(item -> includeDeleted || "UPLOADED".equals(item.getStatus()))
-                .map(this::toFileListResponse)
-                .toList();
-    }
-
-    public List<FileListResponse> listActiveFiles(String userId) {
-        return listFiles(userId, false);
-    }
-
-    public List<FileListResponse> listAllFiles(String userId) {
-        return listFiles(userId, true);
     }
 
 }
