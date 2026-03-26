@@ -1,4 +1,5 @@
 package com.cloudfile.cloudfile_processor.service;
+import com.cloudfile.cloudfile_processor.config.S3Properties;
 import com.cloudfile.cloudfile_processor.dto.FileUploadRequest;
 import com.cloudfile.cloudfile_processor.dto.FileUploadResponse;
 import com.cloudfile.cloudfile_processor.enums.UploadStatus;
@@ -20,13 +21,21 @@ public class FileUploadService {
     private final S3PresignedUrlService s3PresignedUrlService;
     private final FileMetadataRepository fileMetaDataRepository;
     private final DynamoDbTable<FileMetadata> fileTable;
+    private final S3Properties s3Properties;
     private static final int URL_EXPIRATION_MINUTES = 15;
 
-    public FileUploadService(S3PresignedUrlService s3PresignedUrlService, UserContext userContext, FileMetadataRepository fileMetaDataRepository, DynamoDbTable<FileMetadata> fileTable) {
+    public FileUploadService(
+            S3PresignedUrlService s3PresignedUrlService,
+            UserContext userContext,
+            FileMetadataRepository fileMetaDataRepository,
+            DynamoDbTable<FileMetadata> fileTable,
+            S3Properties s3Properties)
+    {
         this.s3PresignedUrlService = s3PresignedUrlService;
         this.userContext = userContext;
         this.fileMetaDataRepository = fileMetaDataRepository;
         this.fileTable = fileTable;
+        this.s3Properties = s3Properties;
     }
 
     //Used to send files
@@ -54,6 +63,7 @@ public class FileUploadService {
         metadata.setMimeType(request.mimeType());
         metadata.setSizeInBytes(request.sizeInBytes());
         metadata.setS3Key(s3Key);
+        metadata.setBucket(s3Properties.inputBucketName());
         metadata.setStatus(UploadStatus.PENDING.name());
         metadata.setUploadDate(OffsetDateTime.now().toString());
 

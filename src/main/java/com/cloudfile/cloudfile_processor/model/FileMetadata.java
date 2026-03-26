@@ -23,6 +23,8 @@ public class FileMetadata {
     private String uploadDate;
     private String deletedAt;
 
+    private String bucket;
+
 
     @DynamoDbPartitionKey
     public String getUserId() {

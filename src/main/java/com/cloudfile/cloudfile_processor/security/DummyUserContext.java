@@ -9,7 +9,7 @@ public class DummyUserContext implements UserContext{
 
     @Override
     public String getUserId() {
-        String userId = "user17";
+        String userId = "user18";
 
         if (userId == null || userId.isBlank()) {
             throw new UnauthorizedException("Invalid user context");

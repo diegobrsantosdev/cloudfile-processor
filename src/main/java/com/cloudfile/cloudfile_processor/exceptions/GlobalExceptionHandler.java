@@ -69,4 +69,10 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest()
                 .body(new ErrorResponse(ex.getMessage(), null));
     }
+
+    @ExceptionHandler(FileDeletionException.class)
+    public ResponseEntity<ErrorResponse> handleFileDeletion(FileDeletionException ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("File deletion failed", null));
+    }
 }
