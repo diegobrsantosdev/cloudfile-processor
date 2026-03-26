@@ -1,6 +1,4 @@
 package com.cloudfile.cloudfile_processor.service;
-
-import com.cloudfile.cloudfile_processor.dto.FileListResponse;
 import com.cloudfile.cloudfile_processor.dto.FileUploadRequest;
 import com.cloudfile.cloudfile_processor.dto.FileUploadResponse;
 import com.cloudfile.cloudfile_processor.enums.UploadStatus;
@@ -31,6 +29,7 @@ public class FileUploadService {
         this.fileTable = fileTable;
     }
 
+    //Used to send files
     public FileUploadResponse createUploadRequest(FileUploadRequest request) {
         String userId = userContext.getUserId();
         String uploadId = generateUploadId();
@@ -43,7 +42,7 @@ public class FileUploadService {
         try {
             preSignedUrl = s3PresignedUrlService.generatePresignedUploadUrl(s3Key);
         } catch (Exception ex) {
-            throw new FileUploadProcessingException("Failed to generate upload URL");
+            throw new FileUploadProcessingException("Failed to generate upload URL", ex);
         }
 
         OffsetDateTime expiresAt = OffsetDateTime.now().plusMinutes(URL_EXPIRATION_MINUTES);
@@ -82,7 +81,9 @@ public class FileUploadService {
     }
 
     private String sanitizeFileName(String fileName) {
-        return fileName.trim().replaceAll("\\s+", "_");
+        return fileName
+                .trim()
+                .replaceAll("[^a-zA-Z0-9\\.\\-_]", "_");
     }
 
 }

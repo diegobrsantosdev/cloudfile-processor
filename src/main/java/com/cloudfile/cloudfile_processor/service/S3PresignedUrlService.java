@@ -23,6 +23,7 @@ public class S3PresignedUrlService {
         this.s3Properties = s3Properties;
     }
 
+    //Used to generatePreSignedUrl
     public String generatePresignedUploadUrl(String s3Key) {
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(s3Properties.inputBucketName())
@@ -39,6 +40,7 @@ public class S3PresignedUrlService {
         return presignedRequest.url().toString();
     }
 
+    //Used to download files using PreSignedUrl
     public String generatePresignedDownloadUrl(String s3Key) {
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(s3Properties.inputBucketName())

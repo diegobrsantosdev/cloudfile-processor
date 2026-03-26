@@ -4,8 +4,6 @@ import com.cloudfile.cloudfile_processor.dto.FileDownloadResponse;
 import com.cloudfile.cloudfile_processor.dto.FileListResponse;
 import com.cloudfile.cloudfile_processor.exceptions.FileNotFoundException;
 import com.cloudfile.cloudfile_processor.model.FileMetadata;
-import com.cloudfile.cloudfile_processor.repository.FileMetadataRepository;
-import com.cloudfile.cloudfile_processor.security.UserContext;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
@@ -61,7 +59,7 @@ public class FileQueryService {
     }
 
 
-    //Download file
+    //Download file endpoint
     public FileDownloadResponse getDownloadUrl(String userId, String fileId) {
         Key key = Key.builder()
                 .partitionValue(userId)
@@ -70,11 +68,7 @@ public class FileQueryService {
 
         FileMetadata metadata = fileTable.getItem(key);
 
-        if (metadata == null) {
-            throw new FileNotFoundException(fileId);
-        }
-
-        if ("DELETED".equals(metadata.getStatus())) {
+        if (metadata == null || "DELETED".equals(metadata.getStatus())) {
             throw new FileNotFoundException(fileId);
         }
 

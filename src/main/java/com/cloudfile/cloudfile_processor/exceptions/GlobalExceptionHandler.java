@@ -1,6 +1,7 @@
 package com.cloudfile.cloudfile_processor.exceptions;
 
 import com.cloudfile.cloudfile_processor.dto.ErrorResponse;
+import org.apache.coyote.BadRequestException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -55,5 +56,17 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleFileNotFound(FileNotFoundException ex) {
         ErrorResponse response = new ErrorResponse(ex.getMessage(), null);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthorized(UnauthorizedException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse(ex.getMessage(), null));
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ErrorResponse> handleBadRequest(BadRequestException ex) {
+        return ResponseEntity.badRequest()
+                .body(new ErrorResponse(ex.getMessage(), null));
     }
 }
