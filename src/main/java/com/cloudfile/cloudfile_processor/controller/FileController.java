@@ -1,5 +1,6 @@
 package com.cloudfile.cloudfile_processor.controller;
 
+import com.cloudfile.cloudfile_processor.dto.FileDownloadResponse;
 import com.cloudfile.cloudfile_processor.dto.FileListResponse;
 import com.cloudfile.cloudfile_processor.dto.FileUploadRequest;
 import com.cloudfile.cloudfile_processor.dto.FileUploadResponse;
@@ -46,4 +47,9 @@ public class FileController {
         return ResponseEntity.ok(fileQueryService.listAllFiles(userId));
     }
 
+    @GetMapping("/{fileId}")
+    public ResponseEntity<FileDownloadResponse> downloadFile(@PathVariable String fileId) {
+        String userId = userContext.getUserId();
+        return ResponseEntity.ok(fileQueryService.getDownloadUrl(userId, fileId));
+    }
 }
