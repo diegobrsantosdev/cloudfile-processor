@@ -50,8 +50,36 @@ public class FileProcessingWorker {
                 deleteMessage(message); // delete it if process successfully
             } catch (Exception ex) {
                 log.error("Failed to process message: {}", message.messageId(), ex);
+                markAsFailed(message);
                 // it doest delete — back to queue and eventually goes to DLQ
             }
+        }
+    }
+
+     //Change status to failed
+    private void markAsFailed(Message message) {
+        try {
+            SqsS3EventMessage event = objectMapper.readValue(message.body(), SqsS3EventMessage.class);
+            for (SqsS3EventMessage.Record record : event.records()) {
+                String s3Key = record.s3().object().key();
+                String[] parts = s3Key.split("/");
+                String userId = parts[1];
+                String fileId = parts[2].substring(0, 36);
+
+                Key key = Key.builder()
+                        .partitionValue(userId)
+                        .sortValue(fileId)
+                        .build();
+
+                FileMetadata metadata = fileTable.getItem(key);
+                if (metadata != null) {
+                    metadata.setStatus("FAILED");
+                    fileTable.putItem(metadata);
+                    log.info("Marked fileId={} as FAILED", fileId);
+                }
+            }
+        } catch (Exception parseEx) {
+            log.error("Could not mark file as FAILED — could not parse message", parseEx);
         }
     }
 
