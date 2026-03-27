@@ -83,13 +83,15 @@ Resources:
                 - ec2.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: S3UploadPolicy
+        - PolicyName: AppPolicy
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
+              # S3 - Input Bucket
               - Effect: Allow
                 Action:
                   - s3:PutObject
+                  - s3:DeleteObject
                 Resource: !Sub "${InputBucket.Arn}/input/*"
 
               - Effect: Allow
@@ -99,8 +101,37 @@ Resources:
 
               - Effect: Allow
                 Action:
+                  - s3:ListBucket
+                Resource: !GetAtt InputBucket.Arn
+
+              # S3 - Output Bucket
+              - Effect: Allow
+                Action:
                   - s3:GetObject
+                  - s3:PutObject
+                  - s3:CopyObject
                 Resource: !Sub "${OutputBucket.Arn}/*"
+
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource: !GetAtt OutputBucket.Arn
+
+              # SQS
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                Resource: !ImportValue file-processor-sqs-dev-QueueArn
+
+              # DynamoDB
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                Resource: !ImportValue file-processor-dynamodb-dev-FilesTableArn
 
 Outputs:
   InputBucketName:
