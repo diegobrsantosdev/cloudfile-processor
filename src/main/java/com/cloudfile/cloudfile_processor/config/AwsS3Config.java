@@ -22,4 +22,5 @@ public class AwsS3Config {
                 .region(Region.of(awsProperties.region()))
                 .build();
     }
+
 }

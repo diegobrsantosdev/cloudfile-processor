@@ -34,6 +34,10 @@ Parameters:
     Type: String
     Description: Export name of the output bucket from the S3 stack
 
+  SqsStackName:
+    Type: String
+    Description: Name of the SQS stack
+
 Resources:
   AwsRegionParameter:
     Type: AWS::SSM::Parameter
@@ -85,6 +89,15 @@ Resources:
       Value: "15"
       Description: Presigned URL expiration time in minutes
 
+  SqsQueueUrlParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ProjectName}/${EnvironmentName}/sqs/queue-url"
+      Type: String
+      Value: !ImportValue
+        Fn::Sub: "${SqsStackName}-QueueUrl"
+      Description: SQS queue URL for file processing
+
 Outputs:
   AwsRegionParameterName:
     Value: !Ref AwsRegionParameter
@@ -103,3 +116,6 @@ Outputs:
 
   PresignedUrlExpirationMinutesParameterName:
     Value: !Ref PresignedUrlExpirationMinutesParameter
+
+  SqsQueueUrlParameterName:
+    Value: !Ref SqsQueueUrlParameter
