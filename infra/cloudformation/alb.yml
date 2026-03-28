@@ -82,3 +82,14 @@ Resources:
       DefaultActions:
         - Type: forward
           TargetGroupArn: !Ref ApiTargetGroup
+
+Outputs:
+  ALBSecurityGroupId:
+    Value: !Ref ALBSecurityGroup
+    Export:
+      Name: !Sub "${AWS::StackName}-ALBSecurityGroupId"
+
+  ApiTargetGroupArn:
+    Value: !Ref ApiTargetGroup
+    Export:
+      Name: !Sub "${AWS::StackName}-ApiTargetGroupArn"
