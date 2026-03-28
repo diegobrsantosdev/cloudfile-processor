@@ -57,41 +57,62 @@ public class FileProcessingWorker {
     }
 
      //Change status to failed
-    private void markAsFailed(Message message) {
-        try {
-            SqsS3EventMessage event = objectMapper.readValue(message.body(), SqsS3EventMessage.class);
-            for (SqsS3EventMessage.Record record : event.records()) {
-                String s3Key = record.s3().object().key();
-                String[] parts = s3Key.split("/");
-                String userId = parts[1];
-                String fileId = parts[2].substring(0, 36);
+     private void markAsFailed(Message message) {
+         try {
+             SqsS3EventMessage event = objectMapper.readValue(message.body(), SqsS3EventMessage.class);
+             for (SqsS3EventMessage.Record record : event.records()) {
+                 String s3Key = record.s3().object().key();
+                 String[] parts = s3Key.split("/");
 
-                Key key = Key.builder()
-                        .partitionValue(userId)
-                        .sortValue(fileId)
-                        .build();
+                 if (parts.length < 3) {
+                     log.error("Cannot mark as FAILED — unexpected s3Key format: {}", s3Key);
+                     return;
+                 }
 
-                FileMetadata metadata = fileTable.getItem(key);
-                if (metadata != null) {
-                    metadata.setStatus("FAILED");
-                    fileTable.putItem(metadata);
-                    log.info("Marked fileId={} as FAILED", fileId);
-                }
-            }
-        } catch (Exception parseEx) {
-            log.error("Could not mark file as FAILED — could not parse message", parseEx);
-        }
-    }
+                 String fileIdWithName = parts[2];
+
+                 if (fileIdWithName.length() < 36) {
+                     log.error("Cannot extract fileId to mark as FAILED. fileIdWithName={}", fileIdWithName);
+                     return;
+                 }
+
+                 String userId = parts[1];
+                 String fileId = fileIdWithName.substring(0, 36);
+
+                 Key key = Key.builder()
+                         .partitionValue(userId)
+                         .sortValue(fileId)
+                         .build();
+
+                 FileMetadata metadata = fileTable.getItem(key);
+                 if (metadata != null) {
+                     metadata.setStatus("FAILED");
+                     fileTable.putItem(metadata);
+                     log.info("Marked fileId={} as FAILED", fileId);
+                 } else {
+                     log.warn("Could not mark as FAILED — metadata not found for fileId={}", fileId);
+                 }
+             }
+         } catch (Exception parseEx) {
+             log.error("Could not mark file as FAILED — could not parse message", parseEx);
+         }
+     }
 
     private void processMessage(Message message) throws Exception {
         SqsS3EventMessage event = objectMapper.readValue(message.body(), SqsS3EventMessage.class);
 
         for (SqsS3EventMessage.Record record : event.records()) {
             String s3Key = record.s3().object().key();
-
             String[] parts = s3Key.split("/");
+            if (parts.length < 3) {
+                throw new RuntimeException("Unexpected s3Key format: " + s3Key);
+            }
             String userId = parts[1];
             String fileIdWithName = parts[2];
+
+            if (fileIdWithName.length() < 36) {
+                throw new RuntimeException("Cannot extract fileId from: " + fileIdWithName);
+            }
 
             String fileId = fileIdWithName.substring(0, 36);
 
@@ -147,32 +168,47 @@ public class FileProcessingWorker {
     }
 
     private void copyToOutput(String sourceKey, String destKey) {
-        CopyObjectRequest copyRequest = CopyObjectRequest.builder()
-                .sourceBucket(s3Properties.inputBucketName())
-                .sourceKey(sourceKey)
-                .destinationBucket(s3Properties.outputBucketName())
-                .destinationKey(destKey)
-                .build();
+        try {
+            CopyObjectRequest copyRequest = CopyObjectRequest.builder()
+                    .sourceBucket(s3Properties.inputBucketName())
+                    .sourceKey(sourceKey)
+                    .destinationBucket(s3Properties.outputBucketName())
+                    .destinationKey(destKey)
+                    .build();
 
-        s3Client.copyObject(copyRequest);
+            s3Client.copyObject(copyRequest);
+        } catch (Exception ex) {
+            throw new RuntimeException("Failed to copy file from input to output. sourceKey=" + sourceKey, ex);
+        }
     }
 
-    private void deleteFromInput(String s3Key) {
-        DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
-                .bucket(s3Properties.inputBucketName())
-                .key(s3Key)
-                .build();
 
-        s3Client.deleteObject(deleteRequest);
+    private void deleteFromInput(String s3Key) {
+        try {
+            DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
+                    .bucket(s3Properties.inputBucketName())
+                    .key(s3Key)
+                    .build();
+
+            s3Client.deleteObject(deleteRequest);
+        } catch (Exception ex) {
+            throw new RuntimeException("Failed to delete file from input bucket. s3Key=" + s3Key, ex);
+        }
     }
 
     private void deleteMessage(Message message) {
-        DeleteMessageRequest deleteRequest = DeleteMessageRequest.builder()
-                .queueUrl(sqsProperties.queueUrl())
-                .receiptHandle(message.receiptHandle())
-                .build();
+        try {
+            DeleteMessageRequest deleteRequest = DeleteMessageRequest.builder()
+                    .queueUrl(sqsProperties.queueUrl())
+                    .receiptHandle(message.receiptHandle())
+                    .build();
 
-        sqsClient.deleteMessage(deleteRequest);
+            sqsClient.deleteMessage(deleteRequest);
+        } catch (Exception ex) {
+            //logs in but does not relaunch — processing has already completed successfully
+            log.error("Failed to delete SQS message: {}. It may be reprocessed.",
+                    message.messageId(), ex);
+        }
     }
 
 
