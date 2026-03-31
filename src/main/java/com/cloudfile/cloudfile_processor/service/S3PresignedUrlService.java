@@ -26,12 +26,12 @@ public class S3PresignedUrlService {
     //Used to generatePreSignedUrl
     public String generatePresignedUploadUrl(String s3Key) {
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                .bucket(s3Properties.inputBucketName())
+                .bucket(s3Properties.getInputBucketName())
                 .key(s3Key)
                 .build();
 
         PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
-                .signatureDuration(Duration.ofMinutes(s3Properties.presignedUrlExpirationMinutes()))
+                .signatureDuration(Duration.ofMinutes(s3Properties.getPresignedUrlExpirationMinutes()))
                 .putObjectRequest(putObjectRequest)
                 .build();
 
@@ -43,12 +43,12 @@ public class S3PresignedUrlService {
     //Used to download files using PreSignedUrl
     public String generatePresignedDownloadUrl(String s3Key) {
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                .bucket(s3Properties.inputBucketName())
+                .bucket(s3Properties.getInputBucketName())
                 .key(s3Key)
                 .build();
 
         GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
-                .signatureDuration(Duration.ofMinutes(s3Properties.presignedUrlExpirationMinutes()))
+                .signatureDuration(Duration.ofMinutes(s3Properties.getPresignedUrlExpirationMinutes()))
                 .getObjectRequest(getObjectRequest)
                 .build();
 

@@ -37,7 +37,7 @@ public class FileDeleteService {
 
         String bucket = metadata.getBucket();
         if (bucket == null) {
-            bucket = s3Properties.inputBucketName();
+            bucket = s3Properties.getInputBucketName();
         }
 
         s3Service.deleteFromS3(bucket, metadata.getS3Key());

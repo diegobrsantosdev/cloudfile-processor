@@ -1,9 +1,15 @@
 package com.cloudfile.cloudfile_processor.config;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import lombok.Getter;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
 
-@ConfigurationProperties(prefix = "aws")
-public record AwsProperties(
-        String region
-) {
+
+@Getter
+@Configuration
+public class AwsProperties{
+
+    @Value("${aws.region}")
+    private String region;
 }
+
