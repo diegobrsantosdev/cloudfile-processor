@@ -1,5 +1,4 @@
-package com.cloudfile.cloudfile_processor.config;
-
+package com.cloudfile.cloudfile_processor.security;
 
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
@@ -7,8 +6,8 @@ import org.springframework.context.annotation.Configuration;
 
 @Getter
 @Configuration
-public class SqsProperties {
+public class JwtProperties {
 
-    @Value("${sqs.queue-url}")
-    private String queueUrl;
+    @Value("${cognito.client-id}")
+    private String clientId;
 }

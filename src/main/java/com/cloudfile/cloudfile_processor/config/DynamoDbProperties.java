@@ -1,8 +1,15 @@
 package com.cloudfile.cloudfile_processor.config;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import lombok.Getter;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
 
-@ConfigurationProperties(prefix = "dynamodb")
-public record DynamoDbProperties(
-        String filesTableName
-) {}
+@Getter
+@Configuration
+public class DynamoDbProperties{
+
+    @Value("${dynamodb.files-table-name}")
+    private String filesTableName;
+
+}
+

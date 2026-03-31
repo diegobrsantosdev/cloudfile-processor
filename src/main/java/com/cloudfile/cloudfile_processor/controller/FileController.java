@@ -10,11 +10,13 @@ import com.cloudfile.cloudfile_processor.service.FileQueryService;
 import com.cloudfile.cloudfile_processor.service.FileUploadService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@AllArgsConstructor
 @RestController
 @RequestMapping("/api/v1/files")
 public class FileController {
@@ -24,13 +26,6 @@ public class FileController {
     private final FileDeleteService fileDeleteService;
     private final UserContext userContext;
 
-
-    public FileController(FileUploadService fileUploadService, FileQueryService fileQueryService, FileDeleteService fileDeleteService, UserContext userContext) {
-        this.fileUploadService = fileUploadService;
-        this.fileQueryService = fileQueryService;
-        this.fileDeleteService = fileDeleteService;
-        this.userContext = userContext;
-    }
 
     @PostMapping
     public ResponseEntity<FileUploadResponse> createUploadRequest(

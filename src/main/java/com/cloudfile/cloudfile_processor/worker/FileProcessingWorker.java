@@ -37,7 +37,7 @@ public class FileProcessingWorker {
     @Scheduled(fixedDelay = 5000)
     public void pollMessages() {
         ReceiveMessageRequest receiveRequest = ReceiveMessageRequest.builder()
-                .queueUrl(sqsProperties.queueUrl())
+                .queueUrl(sqsProperties.getQueueUrl())
                 .maxNumberOfMessages(10)
                 .waitTimeSeconds(20) // long polling
                 .build();
@@ -163,16 +163,16 @@ public class FileProcessingWorker {
 
         metadata.setStatus("COMPLETED");
         metadata.setS3Key(outputKey);
-        metadata.setBucket(s3Properties.outputBucketName()); // bucket updated
+        metadata.setBucket(s3Properties.getOutputBucketName()); // bucket updated
         fileTable.putItem(metadata);
     }
 
     private void copyToOutput(String sourceKey, String destKey) {
         try {
             CopyObjectRequest copyRequest = CopyObjectRequest.builder()
-                    .sourceBucket(s3Properties.inputBucketName())
+                    .sourceBucket(s3Properties.getInputBucketName())
                     .sourceKey(sourceKey)
-                    .destinationBucket(s3Properties.outputBucketName())
+                    .destinationBucket(s3Properties.getOutputBucketName())
                     .destinationKey(destKey)
                     .build();
 
@@ -186,7 +186,7 @@ public class FileProcessingWorker {
     private void deleteFromInput(String s3Key) {
         try {
             DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
-                    .bucket(s3Properties.inputBucketName())
+                    .bucket(s3Properties.getInputBucketName())
                     .key(s3Key)
                     .build();
 
@@ -199,7 +199,7 @@ public class FileProcessingWorker {
     private void deleteMessage(Message message) {
         try {
             DeleteMessageRequest deleteRequest = DeleteMessageRequest.builder()
-                    .queueUrl(sqsProperties.queueUrl())
+                    .queueUrl(sqsProperties.getQueueUrl())
                     .receiptHandle(message.receiptHandle())
                     .build();
 

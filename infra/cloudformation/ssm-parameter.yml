@@ -6,6 +6,11 @@ Parameters:
     Type: String
     Default: file-processor
 
+  CognitoUserPoolId:
+    Type: String
+  CognitoAppClientId:
+    Type: String
+
   EnvironmentName:
     Type: String
     Default: dev
@@ -97,6 +102,20 @@ Resources:
       Value: !ImportValue
         Fn::Sub: "${SqsStackName}-QueueUrl"
       Description: SQS queue URL for file processing
+
+  CognitoIssuerUriParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ProjectName}/${EnvironmentName}/cognito/issuer-uri"
+      Type: String
+      Value: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPoolId}"
+
+  CognitoClientIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ProjectName}/${EnvironmentName}/cognito/client-id"
+      Type: String
+      Value: !Ref CognitoAppClientId
 
 Outputs:
   AwsRegionParameterName:

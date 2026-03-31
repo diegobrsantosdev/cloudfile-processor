@@ -63,7 +63,7 @@ public class FileUploadService {
         metadata.setMimeType(request.mimeType());
         metadata.setSizeInBytes(request.sizeInBytes());
         metadata.setS3Key(s3Key);
-        metadata.setBucket(s3Properties.inputBucketName());
+        metadata.setBucket(s3Properties.getInputBucketName());
         metadata.setStatus(UploadStatus.PENDING.name());
         metadata.setUploadDate(OffsetDateTime.now().toString());
 
