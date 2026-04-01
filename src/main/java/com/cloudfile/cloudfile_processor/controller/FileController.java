@@ -39,7 +39,6 @@ public class FileController {
         return ResponseEntity.ok(fileQueryService.listActiveFiles(userId));
     }
 
-
     @GetMapping("/history")
     public ResponseEntity<List<FileListResponse>> listHistory() {
         String userId = userContext.getUserId();

@@ -10,4 +10,7 @@ public class JwtProperties {
 
     @Value("${cognito.client-id}")
     private String clientId;
+
+    @Value("${cognito.issuer-uri}")
+    private String issuerUri;
 }

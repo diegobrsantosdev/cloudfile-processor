@@ -1,8 +1,10 @@
 package com.cloudfile.cloudfile_processor.model;
 
+import com.cloudfile.cloudfile_processor.enums.UploadStatus;
 import lombok.Getter;
 import lombok.Setter;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
@@ -34,5 +36,19 @@ public class FileMetadata {
     @DynamoDbSortKey
     public String getFileId() {
         return fileId;
+    }
+
+
+
+    //only to use enum in services
+    @DynamoDbIgnore
+    public UploadStatus getStatusEnum() {
+        return UploadStatus.valueOf(this.status);
+    }
+
+    //only to use enum in services
+    @DynamoDbIgnore
+    public void setStatusEnum(UploadStatus statusEnum) {
+        this.status = statusEnum.name();
     }
 }

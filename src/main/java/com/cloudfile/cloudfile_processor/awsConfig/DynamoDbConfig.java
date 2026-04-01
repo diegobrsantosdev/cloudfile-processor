@@ -1,9 +1,8 @@
-package com.cloudfile.cloudfile_processor.config;
+package com.cloudfile.cloudfile_processor.awsConfig;
 
 import com.cloudfile.cloudfile_processor.model.FileMetadata;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;

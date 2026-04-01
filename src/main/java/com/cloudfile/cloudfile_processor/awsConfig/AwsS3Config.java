@@ -1,4 +1,4 @@
-package com.cloudfile.cloudfile_processor.config;
+package com.cloudfile.cloudfile_processor.awsConfig;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

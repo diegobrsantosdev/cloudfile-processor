@@ -1,5 +1,5 @@
 package com.cloudfile.cloudfile_processor.service;
-import com.cloudfile.cloudfile_processor.config.S3Properties;
+import com.cloudfile.cloudfile_processor.awsConfig.S3Properties;
 import com.cloudfile.cloudfile_processor.dto.FileUploadRequest;
 import com.cloudfile.cloudfile_processor.dto.FileUploadResponse;
 import com.cloudfile.cloudfile_processor.enums.UploadStatus;
