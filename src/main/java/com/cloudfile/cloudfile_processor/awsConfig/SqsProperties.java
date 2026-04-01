@@ -1,4 +1,5 @@
-package com.cloudfile.cloudfile_processor.config;
+package com.cloudfile.cloudfile_processor.awsConfig;
+
 
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
@@ -6,10 +7,8 @@ import org.springframework.context.annotation.Configuration;
 
 @Getter
 @Configuration
-public class DynamoDbProperties{
+public class SqsProperties {
 
-    @Value("${dynamodb.files-table-name}")
-    private String filesTableName;
-
+    @Value("${sqs.queue-url}")
+    private String queueUrl;
 }
-

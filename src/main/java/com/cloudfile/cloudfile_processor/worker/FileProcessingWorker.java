@@ -1,8 +1,9 @@
 package com.cloudfile.cloudfile_processor.worker;
 
-import com.cloudfile.cloudfile_processor.config.S3Properties;
-import com.cloudfile.cloudfile_processor.config.SqsProperties;
+import com.cloudfile.cloudfile_processor.awsConfig.S3Properties;
+import com.cloudfile.cloudfile_processor.awsConfig.SqsProperties;
 import com.cloudfile.cloudfile_processor.dto.SqsS3EventMessage;
+import com.cloudfile.cloudfile_processor.enums.UploadStatus;
 import com.cloudfile.cloudfile_processor.model.FileMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
@@ -56,48 +57,48 @@ public class FileProcessingWorker {
         }
     }
 
-     //Change status to failed
-     private void markAsFailed(Message message) {
-         try {
-             SqsS3EventMessage event = objectMapper.readValue(message.body(), SqsS3EventMessage.class);
-             for (SqsS3EventMessage.Record record : event.records()) {
-                 String s3Key = record.s3().object().key();
-                 String[] parts = s3Key.split("/");
 
-                 if (parts.length < 3) {
-                     log.error("Cannot mark as FAILED — unexpected s3Key format: {}", s3Key);
-                     return;
-                 }
+    //Change status to failed
+    private void markAsFailed(Message message) {
+        try {
+            SqsS3EventMessage event = objectMapper.readValue(message.body(), SqsS3EventMessage.class);
+            for (SqsS3EventMessage.Record record : event.records()) {
+                String s3Key = record.s3().object().key();
+                String[] parts = s3Key.split("/");
 
-                 String fileIdWithName = parts[2];
+                if (parts.length < 3) {
+                    log.error("Cannot mark as FAILED — unexpected s3Key format: {}", s3Key);
+                    return;
+                }
 
-                 if (fileIdWithName.length() < 36) {
-                     log.error("Cannot extract fileId to mark as FAILED. fileIdWithName={}", fileIdWithName);
-                     return;
-                 }
+                String fileIdWithName = parts[2];
 
-                 String userId = parts[1];
-                 String fileId = fileIdWithName.substring(0, 36);
+                if (fileIdWithName.length() < 36) {
+                    log.error("Cannot extract fileId to mark as FAILED. fileIdWithName={}", fileIdWithName);
+                    return;
+                }
 
-                 Key key = Key.builder()
-                         .partitionValue(userId)
-                         .sortValue(fileId)
-                         .build();
+                String userId = parts[1];
+                String fileId = fileIdWithName.substring(0, 36);
 
-                 FileMetadata metadata = fileTable.getItem(key);
-                 if (metadata != null) {
-                     metadata.setStatus("FAILED");
-                     fileTable.putItem(metadata);
-                     log.info("Marked fileId={} as FAILED", fileId);
-                 } else {
-                     log.warn("Could not mark as FAILED — metadata not found for fileId={}", fileId);
-                 }
-             }
-         } catch (Exception parseEx) {
-             log.error("Could not mark file as FAILED — could not parse message", parseEx);
-         }
-     }
+                Key key = Key.builder()
+                        .partitionValue(userId)
+                        .sortValue(fileId)
+                        .build();
 
+                FileMetadata metadata = fileTable.getItem(key);
+                if (metadata != null) {
+                    metadata.setStatus(UploadStatus.FAILED.name());
+                    fileTable.putItem(metadata);
+                    log.info("Marked fileId={} as FAILED", fileId);
+                } else {
+                    log.warn("Could not mark as FAILED — metadata not found for fileId={}", fileId);
+                }
+            }
+        } catch (Exception parseEx) {
+            log.error("Could not mark file as FAILED — could not parse message", parseEx);
+        }
+    }
     private void processMessage(Message message) throws Exception {
         SqsS3EventMessage event = objectMapper.readValue(message.body(), SqsS3EventMessage.class);
 
@@ -119,7 +120,7 @@ public class FileProcessingWorker {
             log.info("Processing file: userId={} fileId={} s3Key={}", userId, fileId, s3Key);
 
             // update status to PROCESSING
-            updateStatus(userId, fileId, "PROCESSING", null);
+            updateStatus(userId, fileId, UploadStatus.PROCESSING, null);
 
             // copy from inputBucket to outputBucket
             String outputKey = s3Key.replace("input/", "output/");
@@ -135,7 +136,7 @@ public class FileProcessingWorker {
         }
     }
 
-    private void updateStatus(String userId, String fileId, String status, String outputKey) {
+    private void updateStatus(String userId, String fileId, UploadStatus status, String outputKey) {
         Key key = Key.builder()
                 .partitionValue(userId)
                 .sortValue(fileId)
@@ -146,11 +147,13 @@ public class FileProcessingWorker {
             throw new RuntimeException("FileMetadata not found for fileId: " + fileId);
         }
 
-        metadata.setStatus(status);
+        metadata.setStatus(status.name());
         fileTable.putItem(metadata);
     }
 
     private void updateStatusAndBucket(String userId, String fileId, String outputKey) {
+        updateStatus(userId, fileId, UploadStatus.COMPLETED, null);
+
         Key key = Key.builder()
                 .partitionValue(userId)
                 .sortValue(fileId)
@@ -161,7 +164,6 @@ public class FileProcessingWorker {
             throw new RuntimeException("FileMetadata not found for fileId: " + fileId);
         }
 
-        metadata.setStatus("COMPLETED");
         metadata.setS3Key(outputKey);
         metadata.setBucket(s3Properties.getOutputBucketName()); // bucket updated
         fileTable.putItem(metadata);

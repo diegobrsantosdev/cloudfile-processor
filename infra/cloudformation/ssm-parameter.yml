@@ -6,11 +6,6 @@ Parameters:
     Type: String
     Default: file-processor
 
-  CognitoUserPoolId:
-    Type: String
-  CognitoAppClientId:
-    Type: String
-
   EnvironmentName:
     Type: String
     Default: dev
@@ -108,14 +103,17 @@ Resources:
     Properties:
       Name: !Sub "/${ProjectName}/${EnvironmentName}/cognito/issuer-uri"
       Type: String
-      Value: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPoolId}"
+      Value: !Sub
+        - "https://cognito-idp.${Region}.amazonaws.com/${UserPoolId}"
+        - Region: !Ref AwsRegion
+          UserPoolId: !ImportValue file-processor-cognito-dev-CognitoUserPoolId
 
   CognitoClientIdParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Name: !Sub "/${ProjectName}/${EnvironmentName}/cognito/client-id"
       Type: String
-      Value: !Ref CognitoAppClientId
+      Value: !ImportValue file-processor-cognito-dev-CognitoAppClientId
 
 Outputs:
   AwsRegionParameterName:

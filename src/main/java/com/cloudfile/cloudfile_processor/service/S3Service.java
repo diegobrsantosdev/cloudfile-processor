@@ -1,6 +1,6 @@
 package com.cloudfile.cloudfile_processor.service;
 
-import com.cloudfile.cloudfile_processor.config.S3Properties;
+import com.cloudfile.cloudfile_processor.awsConfig.S3Properties;
 import com.cloudfile.cloudfile_processor.exceptions.FileDeletionException;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.s3.S3Client;

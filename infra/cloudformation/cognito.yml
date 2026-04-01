@@ -87,6 +87,20 @@ Resources:
       Domain: !Sub "${ProjectName}-${AWS::AccountId}-${AWS::Region}-${EnvironmentName}"
       UserPoolId: !Ref MyUserPool
 
+  AdminGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: ADMIN
+      UserPoolId: !Ref MyUserPool
+      Description: Admin users with full access
+
+  UserGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: USER
+      UserPoolId: !Ref MyUserPool
+      Description: Regular users
+
 Outputs:
   CognitoUserPoolId:
     Description: Cognito User Pool ID
@@ -111,3 +125,11 @@ Outputs:
     Value: !Sub "https://${MyUserPoolDomain}.auth.${AWS::Region}.amazoncognito.com"
     Export:
       Name: !Sub "${AWS::StackName}-CognitoHostedUiUrl"
+
+  AdminGroupName:
+    Description: Admin group name
+    Value: !Ref AdminGroup
+
+  UserGroupName:
+    Description: User group name
+    Value: !Ref UserGroup

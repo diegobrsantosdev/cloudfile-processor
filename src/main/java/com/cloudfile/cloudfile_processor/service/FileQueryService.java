@@ -2,6 +2,7 @@ package com.cloudfile.cloudfile_processor.service;
 
 import com.cloudfile.cloudfile_processor.dto.FileDownloadResponse;
 import com.cloudfile.cloudfile_processor.dto.FileListResponse;
+import com.cloudfile.cloudfile_processor.enums.UploadStatus;
 import com.cloudfile.cloudfile_processor.exceptions.FileNotFoundException;
 import com.cloudfile.cloudfile_processor.model.FileMetadata;
 import org.springframework.stereotype.Service;
@@ -32,9 +33,10 @@ public class FileQueryService {
                 item.getMimeType(),
                 item.getSizeInBytes(),
                 item.getUploadDate(),
-                item.getStatus()
+                item.getStatusEnum().name()
         );
     }
+
     private List<FileListResponse> listFiles(String userId, boolean includeDeleted) {
         QueryEnhancedRequest request = QueryEnhancedRequest.builder()
                 .queryConditional(QueryConditional.keyEqualTo(
@@ -45,7 +47,7 @@ public class FileQueryService {
         return fileTable.query(request)
                 .stream()
                 .flatMap(page -> page.items().stream())
-                .filter(item -> includeDeleted || "UPLOADED".equals(item.getStatus()))
+                .filter(item -> includeDeleted || item.getStatusEnum() == UploadStatus.COMPLETED)
                 .map(this::toFileListResponse)
                 .toList();
     }
@@ -68,7 +70,7 @@ public class FileQueryService {
 
         FileMetadata metadata = fileTable.getItem(key);
 
-        if (metadata == null || "DELETED".equals(metadata.getStatus())) {
+        if (metadata == null || metadata.getStatusEnum() == UploadStatus.DELETED) {
             throw new FileNotFoundException(fileId);
         }
 

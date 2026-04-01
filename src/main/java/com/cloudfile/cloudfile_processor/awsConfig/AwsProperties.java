@@ -1,4 +1,4 @@
-package com.cloudfile.cloudfile_processor.config;
+package com.cloudfile.cloudfile_processor.awsConfig;
 
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
