@@ -115,6 +115,36 @@ Resources:
       Type: String
       Value: !ImportValue file-processor-cognito-dev-CognitoAppClientId
 
+  FilesTableNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ProjectName}/${EnvironmentName}/dynamodb/files-table-name"
+      Type: String
+      Value: !Sub "${ProjectName}-${EnvironmentName}-files"
+      Tags:
+        Project: !Ref ProjectName
+        Environment: !Ref EnvironmentName
+
+  FileIdIndexNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ProjectName}/${EnvironmentName}/dynamodb/file-id-index-name"
+      Type: String
+      Value: fileId-index
+      Tags:
+        Project: !Ref ProjectName
+        Environment: !Ref EnvironmentName
+
+  UserIdIndexNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ProjectName}/${EnvironmentName}/dynamodb/user-id-index-name"
+      Type: String
+      Value: UserIdIndex
+      Tags:
+        Project: !Ref ProjectName
+        Environment: !Ref EnvironmentName
+
 Outputs:
   AwsRegionParameterName:
     Value: !Ref AwsRegionParameter
@@ -136,3 +166,12 @@ Outputs:
 
   SqsQueueUrlParameterName:
     Value: !Ref SqsQueueUrlParameter
+
+  FilesTableNameParameterName:
+    Value: !Ref FilesTableNameParameter
+
+  FileIdIndexNameParameterName:
+    Value: !Ref FileIdIndexNameParameter
+
+  UserIdIndexNameParameterName:
+    Value: !Ref UserIdIndexNameParameter

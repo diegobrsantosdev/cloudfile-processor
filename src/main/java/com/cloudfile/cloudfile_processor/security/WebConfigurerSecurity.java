@@ -1,5 +1,6 @@
 package com.cloudfile.cloudfile_processor.security;
 
+import com.cloudfile.cloudfile_processor.config.RolePermissions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -34,20 +35,31 @@ public class WebConfigurerSecurity {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(FILE_UPLOAD.getUrl()).permitAll()
-                        .requestMatchers(FILE_LIST.getUrl()).permitAll()
-                        .requestMatchers(FILE_HISTORY.getUrl()).permitAll()
-                        .requestMatchers(FILE_DOWNLOAD.getUrl()).permitAll()
-                        .requestMatchers(FILE_DELETE.getUrl()).permitAll()
-                        .requestMatchers(SWAGGER.getUrl()).permitAll()
-                        .requestMatchers(SWAGGER_API.getUrl()).permitAll()
-                        .requestMatchers(ACTUATOR.getUrl()).permitAll()
+                        .requestMatchers(
+                                SWAGGER.getUrl(),
+                                SWAGGER_API.getUrl(),
+                                ACTUATOR.getUrl()
+                        ).permitAll()
+
+                        .requestMatchers(
+                                FILE_UPLOAD.getUrl(),
+                                FILE_LIST.getUrl(),
+                                FILE_HISTORY.getUrl(),
+                                FILE_DOWNLOAD_BY_ID.getUrl(),
+                                FILE_DELETE_BY_ID.getUrl()
+                        ).hasRole(RolePermissions.USER.getRole())
+
+                        .requestMatchers(
+                                ADMIN_LIST_USERS.getUrl(),
+                                ADMIN_LIST_USER_FILES.getUrl(),
+                                ADMIN_FILE_REPROCESS.getUrl(),
+                                ADMIN_FILE_DELETE_BY_ID.getUrl()
+                        ).hasRole(RolePermissions.ADMIN.getRole())
+
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt
-                                .jwtAuthenticationConverter(jwtAuthenticationConverter())
-                        )
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
                 );
 
         return http.build();
@@ -81,7 +93,7 @@ public class WebConfigurerSecurity {
                 .withJwkSetUri(jwksUri)
                 .build();
 
-        // valida o issuer manualmente
+        // validate issuer manually
         OAuth2TokenValidator<Jwt> issuerValidator =
                 JwtValidators.createDefaultWithIssuer(jwtProperties.getIssuerUri());
 

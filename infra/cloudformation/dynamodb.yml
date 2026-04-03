@@ -30,6 +30,8 @@ Resources:
           KeyType: HASH
         - AttributeName: fileId
           KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+
       GlobalSecondaryIndexes:
         - IndexName: UserIdIndex
           KeySchema:
@@ -37,7 +39,14 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
-      BillingMode: PAY_PER_REQUEST
+        - IndexName: fileId-index
+          KeySchema:
+            - AttributeName: fileId
+              KeyType: HASH
+            - AttributeName: userId
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
       Tags:
         - Key: Name
           Value: !Sub "${ProjectName}-${EnvironmentName}-files"
@@ -47,16 +56,6 @@ Resources:
           Value: !Ref EnvironmentName
         - Key: ManagedBy
           Value: cloudformation
-
-  FilesTableNameParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${ProjectName}/${EnvironmentName}/dynamodb/files-table-name"
-      Type: String
-      Value: !Sub "${ProjectName}-${EnvironmentName}-files"
-      Tags:
-        Project: !Ref ProjectName
-        Environment: !Ref EnvironmentName
 
 Outputs:
   FilesTableName:
@@ -70,11 +69,6 @@ Outputs:
     Value: !GetAtt ApiFiles.Arn
     Export:
       Name: !Sub "${AWS::StackName}-FilesTableArn"
-
-  FilesTableSsmParameter:
-    Value: !Ref FilesTableNameParameter
-    Export:
-      Name: !Sub "${AWS::StackName}-FilesTableSsmParameterName"
 
 
       # --------------------------

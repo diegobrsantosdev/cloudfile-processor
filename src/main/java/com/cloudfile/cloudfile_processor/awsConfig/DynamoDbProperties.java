@@ -11,5 +11,11 @@ public class DynamoDbProperties{
     @Value("${dynamodb.files-table-name}")
     private String filesTableName;
 
+    @Value("${dynamodb.file-id-index-name}")
+    private String fileIdIndexName;
+
+    @Value("${dynamodb.user-id-index-name}")
+    private String userIdIndexName;
 }
+
 
