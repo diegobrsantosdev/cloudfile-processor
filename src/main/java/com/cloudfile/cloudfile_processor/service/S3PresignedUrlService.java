@@ -43,7 +43,7 @@ public class S3PresignedUrlService {
     //Used to download files using PreSignedUrl
     public String generatePresignedDownloadUrl(String s3Key) {
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                .bucket(s3Properties.getInputBucketName())
+                .bucket(s3Properties.getOutputBucketName())
                 .key(s3Key)
                 .build();
 

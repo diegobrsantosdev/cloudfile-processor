@@ -3,10 +3,7 @@ package com.cloudfile.cloudfile_processor.model;
 import com.cloudfile.cloudfile_processor.enums.UploadStatus;
 import lombok.Getter;
 import lombok.Setter;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.*;
 
 @Getter
 @Setter
@@ -29,11 +26,14 @@ public class FileMetadata {
 
 
     @DynamoDbPartitionKey
+    @DynamoDbSecondaryPartitionKey(indexNames = "UserIdIndex")
+    @DynamoDbSecondarySortKey(indexNames = "fileId-index")
     public String getUserId() {
         return userId;
     }
 
     @DynamoDbSortKey
+    @DynamoDbSecondaryPartitionKey(indexNames = "fileId-index")
     public String getFileId() {
         return fileId;
     }

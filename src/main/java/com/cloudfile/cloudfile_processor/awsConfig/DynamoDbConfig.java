@@ -4,6 +4,7 @@ import com.cloudfile.cloudfile_processor.model.FileMetadata;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.regions.Region;
@@ -36,6 +37,20 @@ public class DynamoDbConfig {
                 dynamoDbProperties.getFilesTableName(),
                 TableSchema.fromBean(FileMetadata.class)
         );
+    }
+
+    @Bean
+    public DynamoDbIndex<FileMetadata> fileIdIndex(
+            DynamoDbTable<FileMetadata> fileTable,
+            DynamoDbProperties dynamoDbProperties) {
+        return fileTable.index(dynamoDbProperties.getFileIdIndexName());
+    }
+
+    @Bean
+    public DynamoDbIndex<FileMetadata> userIdIndex(
+            DynamoDbTable<FileMetadata> fileTable,
+            DynamoDbProperties dynamoDbProperties) {
+        return fileTable.index(dynamoDbProperties.getUserIdIndexName());
     }
 
 }
