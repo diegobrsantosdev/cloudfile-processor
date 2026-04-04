@@ -2,6 +2,7 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: User Pool, App Client, and Domain for the file storage system MVP.
 
 Parameters:
+
   ProjectName:
     Type: String
     Default: file-processor
@@ -32,6 +33,8 @@ Resources:
         - email
       AutoVerifiedAttributes:
         - email
+      LambdaConfig:
+        PostConfirmation: !GetAtt PostConfirmationLambda.Arn
       Policies:
         PasswordPolicy:
           MinimumLength: 8
@@ -101,7 +104,70 @@ Resources:
       UserPoolId: !Ref MyUserPool
       Description: Regular users
 
+  PostConfirmationLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CognitoAddUserToGroupPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cognito-idp:AdminAddUserToGroup
+                Resource: !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+
+  PostConfirmationLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-${EnvironmentName}-post-confirmation"
+      Handler: index.lambda_handler
+      Role: !GetAtt PostConfirmationLambdaRole.Arn
+      Runtime: python3.9
+      Code:
+        ZipFile: |
+          import boto3
+          import logging
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+          def lambda_handler(event, context):
+              client = boto3.client('cognito-idp')
+              group_name = 'USER'
+              user_pool_id = event['userPoolId']
+              user_name = event['userName']
+              try:
+                  client.admin_add_user_to_group(
+                      UserPoolId=user_pool_id,
+                      Username=user_name,
+                      GroupName=group_name
+                  )
+                  logger.info(f"User {user_name} successfully added to group {group_name}")
+              except Exception as e:
+                  logger.error(f"Error adding user to group: {str(e)}")
+              return event
+
+  PostConfirmationLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt PostConfirmationLambda.Arn
+      Principal: cognito-idp.amazonaws.com
+
 Outputs:
+
   CognitoUserPoolId:
     Description: Cognito User Pool ID
     Value: !Ref MyUserPool
@@ -133,3 +199,9 @@ Outputs:
   UserGroupName:
     Description: User group name
     Value: !Ref UserGroup
+
+  PostConfirmationLambdaArn:
+    Description: ARN of the Post Confirmation Lambda
+    Value: !GetAtt PostConfirmationLambda.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-PostConfirmationLambdaArn"
