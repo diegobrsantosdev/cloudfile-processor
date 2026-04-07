@@ -7,6 +7,8 @@ import com.cloudfile.cloudfile_processor.exceptions.FileUploadProcessingExceptio
 import com.cloudfile.cloudfile_processor.model.FileMetadata;
 import com.cloudfile.cloudfile_processor.repository.FileMetadataRepository;
 import com.cloudfile.cloudfile_processor.security.UserContext;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 
@@ -14,7 +16,9 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 
+@Slf4j
 @Service
+@AllArgsConstructor
 public class FileUploadService {
 
     private final UserContext userContext;
@@ -22,23 +26,8 @@ public class FileUploadService {
     private final FileMetadataRepository fileMetaDataRepository;
     private final DynamoDbTable<FileMetadata> fileTable;
     private final S3Properties s3Properties;
-    private static final int URL_EXPIRATION_MINUTES = 15;
 
-    public FileUploadService(
-            S3PresignedUrlService s3PresignedUrlService,
-            UserContext userContext,
-            FileMetadataRepository fileMetaDataRepository,
-            DynamoDbTable<FileMetadata> fileTable,
-            S3Properties s3Properties)
-    {
-        this.s3PresignedUrlService = s3PresignedUrlService;
-        this.userContext = userContext;
-        this.fileMetaDataRepository = fileMetaDataRepository;
-        this.fileTable = fileTable;
-        this.s3Properties = s3Properties;
-    }
 
-    //Used to send files
     public FileUploadResponse createUploadRequest(FileUploadRequest request) {
         String userId = userContext.getUserId();
         String uploadId = generateUploadId();
@@ -47,6 +36,9 @@ public class FileUploadService {
                 uploadId,
                 request.originalFileName());
 
+        log.info("[UPLOAD] Starting request. User: {}, File: {}", userId, request.originalFileName());
+
+
         String preSignedUrl;
         try {
             preSignedUrl = s3PresignedUrlService.generatePresignedUploadUrl(s3Key);
@@ -54,7 +46,7 @@ public class FileUploadService {
             throw new FileUploadProcessingException("Failed to generate upload URL", ex);
         }
 
-        OffsetDateTime expiresAt = OffsetDateTime.now().plusMinutes(URL_EXPIRATION_MINUTES);
+        OffsetDateTime expiresAt = OffsetDateTime.now().plusMinutes(s3Properties.getPresignedUrlExpirationMinutes());
 
         FileMetadata metadata = new FileMetadata();
         metadata.setUserId(userId);
@@ -72,6 +64,8 @@ public class FileUploadService {
         } catch (Exception ex) {
             throw new FileUploadProcessingException("Failed to save file metadata");
         }
+
+        log.info("[UPLOAD] Success. FileId: {} created.", uploadId);
 
         return new FileUploadResponse(
                 uploadId,
@@ -91,9 +85,12 @@ public class FileUploadService {
     }
 
     private String sanitizeFileName(String fileName) {
-        return fileName
-                .trim()
-                .replaceAll("[^a-zA-Z0-9\\.\\-_]", "_");
+        if (fileName == null) return "unknown";
+        String normalized = java.text.Normalizer.normalize(fileName, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "");
+        return normalized.trim()
+                .replaceAll("[^a-zA-Z0-9\\.\\-_]", "_")
+                .replaceAll("_{2,}", "_");
     }
 
 }

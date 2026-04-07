@@ -50,7 +50,7 @@ public class FileProcessingWorker {
                 processMessage(message);
                 deleteMessage(message); // delete it if process successfully
             } catch (Exception ex) {
-                log.error("Failed to process message: {}", message.messageId(), ex);
+                log.error("Failed to process message: {}. Reason: {}", message.messageId(), ex.getMessage());
                 markAsFailed(message);
                 // it doest delete — back to queue and eventually goes to DLQ
             }
@@ -99,6 +99,7 @@ public class FileProcessingWorker {
             log.error("Could not mark file as FAILED — could not parse message", parseEx);
         }
     }
+
     private void processMessage(Message message) throws Exception {
         SqsS3EventMessage event = objectMapper.readValue(message.body(), SqsS3EventMessage.class);
 
@@ -130,13 +131,14 @@ public class FileProcessingWorker {
             deleteFromInput(s3Key);
 
             // updates status for COMPLETED and updates bucket
-            updateStatusAndBucket(userId, fileId, outputKey);
+            markAsCompleted(userId, fileId, outputKey);
 
             log.info("File processed successfully: fileId={}", fileId);
         }
     }
 
     private void updateStatus(String userId, String fileId, UploadStatus status, String outputKey) {
+
         Key key = Key.builder()
                 .partitionValue(userId)
                 .sortValue(fileId)
@@ -148,12 +150,12 @@ public class FileProcessingWorker {
         }
 
         metadata.setStatus(status.name());
-        fileTable.putItem(metadata);
+        fileTable.updateItem(metadata);
+
+        log.info("Updated status for fileId={} to {}", fileId, status);
     }
 
-    private void updateStatusAndBucket(String userId, String fileId, String outputKey) {
-        updateStatus(userId, fileId, UploadStatus.COMPLETED, null);
-
+    private void markAsCompleted(String userId, String fileId, String outputKey) {
         Key key = Key.builder()
                 .partitionValue(userId)
                 .sortValue(fileId)
@@ -164,9 +166,12 @@ public class FileProcessingWorker {
             throw new RuntimeException("FileMetadata not found for fileId: " + fileId);
         }
 
+        metadata.setStatus(UploadStatus.COMPLETED.name());
         metadata.setS3Key(outputKey);
-        metadata.setBucket(s3Properties.getOutputBucketName()); // bucket updated
-        fileTable.putItem(metadata);
+        metadata.setBucket(s3Properties.getOutputBucketName());
+
+        fileTable.updateItem(metadata);
+        log.info("[WORKER] Success: Status COMPLETED and Bucket updated for fileId={}", fileId);
     }
 
     private void copyToOutput(String sourceKey, String destKey) {
@@ -212,6 +217,5 @@ public class FileProcessingWorker {
                     message.messageId(), ex);
         }
     }
-
 
 }

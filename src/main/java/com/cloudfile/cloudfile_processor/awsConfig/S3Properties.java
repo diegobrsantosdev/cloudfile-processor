@@ -15,6 +15,8 @@ public class S3Properties {
     @Value("${s3.output-bucket-name}")
     private String outputBucketName;
 
-    @Value("${s3.presigned-url-expiration-minutes}")
+    @Value("${s3.presigned-url-expiration-minutes:15}")
     private Integer presignedUrlExpirationMinutes;
+
+    public static final int URL_EXPIRATION_MINUTES = 15;
 }

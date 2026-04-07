@@ -30,6 +30,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(response);
     }
 
+    @ExceptionHandler(software.amazon.awssdk.services.s3.model.S3Exception.class)
+    public ResponseEntity<ErrorResponse> handleS3Exception(software.amazon.awssdk.services.s3.model.S3Exception ex) {
+        log.error("[AWS-S3-CRITICAL] Error returned by S3 service. Code: {}, Message: {}",
+                ex.awsErrorDetails().errorCode(), ex.awsErrorDetails().errorMessage(), ex);
+
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(new ErrorResponse("Communication failure with storage service", null));
+    }
+
     @ExceptionHandler(InvalidFileUploadRequestException.class)
     public ResponseEntity<ErrorResponse> handleInvalidRequest(InvalidFileUploadRequestException ex) {
         ErrorResponse response = new ErrorResponse(ex.getMessage(), null);
@@ -75,4 +84,22 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ErrorResponse("File deletion failed", null));
     }
+
+    @ExceptionHandler(FileOperationException.class)
+    public ResponseEntity<ErrorResponse> handleFileOperation(FileOperationException ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse(ex.getMessage(), null));
+    }
+
+    @ExceptionHandler(AdminOperationException.class)
+    public ResponseEntity<ErrorResponse> handleAdminOperation(AdminOperationException ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse(ex.getMessage(), null));
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<String> handleIllegalState(IllegalStateException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+
 }
