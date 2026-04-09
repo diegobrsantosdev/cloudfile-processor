@@ -29,26 +29,31 @@ public class FileController {
 
     @PostMapping
     public ResponseEntity<FileUploadResponse> createUploadRequest(
-            @Valid @RequestBody FileUploadRequest request
-    ){ return ResponseEntity.ok(fileUploadService.createUploadRequest(request));}
+            @Valid @RequestBody FileUploadRequest request) {
+        var response = fileUploadService.createUploadRequest(request);
+        return ResponseEntity.ok(response);
+    }
 
 
     @GetMapping
     public ResponseEntity<List<FileListResponse>> listFiles() {
         String userId = userContext.getUserId();
-        return ResponseEntity.ok(fileQueryService.listActiveFiles(userId));
+        var files = fileQueryService.listActiveFiles(userId);
+        return ResponseEntity.ok(files);
     }
 
     @GetMapping("/history")
     public ResponseEntity<List<FileListResponse>> listHistory() {
         String userId = userContext.getUserId();
-        return ResponseEntity.ok(fileQueryService.listAllFiles(userId));
+        var files = fileQueryService.listAllFiles(userId);
+        return ResponseEntity.ok(files);
     }
 
     @GetMapping("/{fileId}")
     public ResponseEntity<FileDownloadResponse> downloadFile(@PathVariable String fileId) {
         String userId = userContext.getUserId();
-        return ResponseEntity.ok(fileQueryService.getDownloadUrl(userId, fileId));
+        var download = fileQueryService.getDownloadUrl(userId, fileId);
+        return ResponseEntity.ok(download);
     }
 
     @DeleteMapping("/{fileId}")
