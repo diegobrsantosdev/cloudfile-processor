@@ -202,6 +202,20 @@ VPC: 10.0.0.0/16
 ECS tasks run in **private subnets** — never exposed directly to the internet. All inbound traffic flows through the ALB. Outbound internet access is via **NAT Gateway**.
  
 ---
+
+## Observability & Quality
+
+To ensure system reliability and maintainability, the following practices were implemented:
+
+- **Logging & Tracing:** Centralized logging using **Amazon CloudWatch**. Application logs are formatted in JSON for structured analysis, with custom correlation IDs to trace requests across the API and Worker.
+- **Monitoring:** CloudWatch Metrics and Alarms are used to monitor **SQS Queue depth** (to trigger scaling) and **ECS CPU/Memory** utilization.
+- **Resilience:** - **Dead Letter Queues (DLQ):** Messages that fail after 3 retries are moved to a DLQ for manual inspection.
+    - **Graceful Shutdown:** ECS tasks handle termination signals to complete processing before stopping.
+- **Testing Strategy:** - **Unit Tests:** High coverage of business logic using **JUnit 5** and **Mockito**.
+    - **Integration Tests:** Validation of S3 and DynamoDB interactions.
+- **Error Handling:** Standardized API responses using `@ControllerAdvice` and custom exceptions (e.g., `OperationException`) to ensure clear error communication.
+
+---
  
 ## API Endpoints
  
@@ -218,6 +232,15 @@ Base URL: `http://<alb-dns>/api/v1`
 | `GET` | `/files/history` | Full file history including deleted | `200 List<FileListResponse>` |
 | `GET` | `/files/{fileId}` | Get pre-signed download URL for a file | `200 FileDownloadResponse` |
 | `DELETE` | `/files/{fileId}` | Soft-delete in DynamoDB + hard-delete in S3 | `204 No Content` |
+
+### Admin Endpoints
+
+| Method | Endpoint | Description | Response |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/admin/users` | List all unique user IDs in the system | `200 List<String>` |
+| `GET` | `/admin/users/{userId}` | List all files belonging to a specific user | `200 List<FileListResponse>` |
+| `POST` | `/admin/{fileId}/reprocess` | Force a manual re-trigger of file processing | `200 OK` |
+| `DELETE` | `/admin/{fileId}` | Administrative hard-delete of a specific file | `204 No Content` |
  
 ### Authentication (Cognito Hosted UI)
  
