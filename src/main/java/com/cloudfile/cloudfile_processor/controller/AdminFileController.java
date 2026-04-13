@@ -24,18 +24,20 @@ public class AdminFileController {
 
     @GetMapping("/users")
     public ResponseEntity<List<String>> listAllUsers() {
-        return ResponseEntity.ok(fileQueryService.listAllUsers());
+        var users = fileQueryService.listAllUsers();
+        return ResponseEntity.ok(users);
     }
 
     @GetMapping("/users/{userId}")
     public ResponseEntity<List<FileListResponse>> listFilesByUser(@PathVariable String userId) {
-        return ResponseEntity.ok(fileQueryService.listAllFiles(userId));
+        var files = fileQueryService.listAllFiles(userId);
+        return ResponseEntity.ok(files);
     }
 
     @PostMapping("/{fileId}/reprocess")
     public ResponseEntity<Void> reprocessFile(@PathVariable String fileId) {
         fileProcessingService.forceReprocessByFileId(fileId);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{fileId}")
