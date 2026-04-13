@@ -4,6 +4,7 @@ import com.cloudfile.cloudfile_processor.dto.FileDownloadResponse;
 import com.cloudfile.cloudfile_processor.dto.FileListResponse;
 import com.cloudfile.cloudfile_processor.dto.FileUploadResponse;
 import com.cloudfile.cloudfile_processor.enums.UploadStatus;
+import com.cloudfile.cloudfile_processor.exceptions.FileOperationException;
 import com.cloudfile.cloudfile_processor.security.UserContext;
 import com.cloudfile.cloudfile_processor.service.FileDeleteService;
 import com.cloudfile.cloudfile_processor.service.FileQueryService;
@@ -14,14 +15,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -30,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @AutoConfigureMockMvc(addFilters = false)
 @WebMvcTest(FileController.class)
+@ActiveProfiles("test")
 class FileControllerTest {
 
     public static final String UPLOAD_REQUEST = "/api/v1/files";
@@ -37,7 +41,6 @@ class FileControllerTest {
     public static final String HISTORY = "/api/v1/files/history";
     public static final String DOWNLOAD_FILES = "/api/v1/files/{fileId}";
     public static final String DELETE_FILES = "/api/v1/files/{fileId}";
-
 
     @Autowired
     private MockMvc mockMvc;
@@ -56,7 +59,7 @@ class FileControllerTest {
 
     @DisplayName( "Should be successful when upload is success")
     @Test
-    public void shouldBe200WhenUploadIsSuccess() throws Exception {
+    public void shouldUploadFileSuccessfully() throws Exception {
         var now = OffsetDateTime.now();
         var response = new FileUploadResponse(
                 "id",
@@ -69,7 +72,8 @@ class FileControllerTest {
         var uploadRequest = """
                   {"originalFileName":"test.txt","mimeType":"text/plain","sizeInBytes":10}
                 """;
-        this.mockMvc.perform(post(UPLOAD_REQUEST)
+        mockMvc.perform(post(UPLOAD_REQUEST)
+                        .with(csrf())
                         .contentType("application/json")
                 .content(uploadRequest))
                 .andExpect(status().isOk())
@@ -82,7 +86,7 @@ class FileControllerTest {
 
     @DisplayName("Should be successful when listing files")
     @Test
-    public void shouldBe200WhenListingFiles() throws Exception {
+    public void shouldReturn200WhenListingFiles() throws Exception {
         var response = new FileListResponse(
                 "id",
                 "s3key",
@@ -94,7 +98,7 @@ class FileControllerTest {
         );
         when(fileQueryService.listActiveFiles(any())).thenReturn(List.of(response));
 
-        this.mockMvc.perform(get(LIST_FILES)
+        mockMvc.perform(get(LIST_FILES)
                         .contentType("application/json"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].uploadId").value("id"))
@@ -106,10 +110,21 @@ class FileControllerTest {
                 .andExpect(jsonPath("$[0].status").value("PENDING"));
     }
 
+    @DisplayName("Shoud be sucessfull when listing empty list")
+    @Test
+    public void shouldReturn200WhenListingEmptyList() throws Exception{
+        when(fileQueryService.listActiveFiles(any())).thenReturn(List.of());
+
+        mockMvc.perform(get(LIST_FILES))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+
+
+    }
 
     @DisplayName( "Should be successful when listing history")
     @Test
-    public void shouldBe200WhenListingHistory() throws Exception{
+    public void shouldReturn200WhenListingHistory() throws Exception{
         var response = new FileListResponse(
                 "id",
                 "s3key",
@@ -120,7 +135,8 @@ class FileControllerTest {
                 "PENDING"
         );
         when(fileQueryService.listAllFiles(any())).thenReturn(List.of(response));
-        this.mockMvc.perform(get(HISTORY)
+
+        mockMvc.perform(get(HISTORY)
                         .contentType("application/json"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].uploadId").value("id"))
@@ -134,14 +150,16 @@ class FileControllerTest {
 
     @DisplayName( "Should be successful when download file")
     @Test
-    public void shoudBe200WhenDownloadFile() throws Exception{
+    public void shouldReturn200WhenDownloadFile() throws Exception{
         var response = new FileDownloadResponse(
                 "FileId",
                 "FileName",
                 "preSignedUrl"
         );
+
         when(fileQueryService.getDownloadUrl(any(), any())).thenReturn(response);
-        this.mockMvc.perform(get(DOWNLOAD_FILES, "id")
+
+        mockMvc.perform(get(DOWNLOAD_FILES, "id")
                         .contentType("application/json"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.fileId").value("FileId"))
@@ -151,11 +169,28 @@ class FileControllerTest {
 
     @DisplayName( "Should be successful when delete file")
     @Test
-    public void shouBe204WhenDeleteFile() throws Exception {
+    public void shouldReturn204WhenDeleteFile() throws Exception {
+
         doNothing().when(fileDeleteService).deleteFile(any(), any());
-        this.mockMvc.perform(delete(DELETE_FILES, "id")
+
+        mockMvc.perform(delete(DELETE_FILES, "id")
+                        .with(csrf())
                         .contentType("application/json"))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("Should return 500 when listing files fails")
+    @WithMockUser
+    public void shouldReturn500WhenListingFilesFails() throws Exception {
+
+        when(fileQueryService.listActiveFiles(any()))
+                .thenThrow(new FileOperationException("Failed to retrieve files", null));
+
+        mockMvc.perform(get(LIST_FILES)
+                        .contentType("application/json"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.error").value("Failed to retrieve files"));
     }
 
 }
