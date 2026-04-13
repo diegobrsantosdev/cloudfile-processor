@@ -11,7 +11,9 @@ Users upload files via pre-signed S3 URLs, which are processed asynchronously th
 - [Architecture](#architecture)
 - [Processing Pipeline](#processing-pipeline)
 - [Tech Stack](#tech-stack)
-- [Infrastructure](#infrastructure)
+- [Database Schema](#database-schema-amazon-dynamodb)
+- [Infrastructure as Code](#infrastructure-as-code-aws)
+- [Observability & Quality](#observability--quality)
 - [API Endpoints](#api-endpoints)
 - [Security](#security)
 - [Environment Variables](#environment-variables)
@@ -29,6 +31,25 @@ CloudFile Processor solves the challenge of handling file uploads reliably at sc
 - Processing is decoupled via SQS — the API responds instantly, processing happens in the background
 - All infrastructure is reproducible via CloudFormation — no manual AWS console setup
 - Metadata is tracked in DynamoDB with full status history (PENDING → PROCESSING → COMPLETED / FAILED / DELETED)
+
+---
+
+## Tech Stack
+ 
+### Backend
+| Technology | Purpose |
+|---|---|
+| Java 17 | Core language |
+| Spring Boot 3 | Application framework |
+| Spring Security | Authentication & authorization |
+| AWS SDK v2 | S3, SQS, DynamoDB, SSM and CloudWatch integration |
+| DynamoDB Enhanced Client | Type-safe DynamoDB operations |
+| AWS SSM | Centralized configuration and secret management |
+| Amazon CloudWatch | Centralized logging and observability |
+| JWT (Cognito) | Stateless authentication |
+| JUnit 5 + Mockito | Unit and integration testing |
+| Docker | Containerization |
+| Maven | Build tool |
  
 ---
  
@@ -122,6 +143,8 @@ Worker receives message
       
       │ (on failure: message returns to queue, max 3 retries → DLQ)
 ```
+
+---
  
 **File status lifecycle:**
  
@@ -132,64 +155,9 @@ PENDING ──► PROCESSING ──► COMPLETED
  
 COMPLETED or PENDING ──► DELETED  (user deletes file)
 ```
- 
+
 ---
- 
-## Tech Stack
- 
-### Backend
-| Technology | Purpose |
-|---|---|
-| Java 17 | Core language |
-| Spring Boot 3 | Application framework |
-| Spring Security | Authentication & authorization |
-| Spring Data JPA | (reserved for relational data) |
-| AWS SDK v2 | S3, SQS, DynamoDB integration |
-| DynamoDB Enhanced Client | Type-safe DynamoDB operations |
-| JWT (Cognito) | Stateless authentication |
-| JUnit 5 + Mockito | Unit and integration testing |
-| Docker | Containerisation |
-| Maven | Build tool |
- 
-### AWS Infrastructure
-| Service | Role |
-|---|---|
-| Amazon S3 | File storage (input + output buckets) |
-| Amazon SQS | Async message queue with DLQ |
-| Amazon DynamoDB | File metadata storage |
-| Amazon ECS Fargate | Serverless container orchestration |
-| Amazon ECR | Container image registry |
-| Amazon Cognito | User authentication (User Pool + JWT) |
-| Application Load Balancer | Public API entry point |
-| AWS CloudFormation | Infrastructure as Code |
-| AWS SSM Parameter Store | Centralised configuration |
-| Amazon CloudWatch | Logs and monitoring |
-| Amazon VPC | Network isolation (public + private subnets) |
-| NAT Gateway | Outbound internet for private subnets |
- 
----
- 
-## Infrastructure
- 
-The infrastructure is fully managed with CloudFormation, split into independent stacks:
- 
-```
-cloudformation/
-├── network.yml       # VPC, subnets, IGW, NAT Gateway, route tables
-├── sqs.yml           # SQS queue, DLQ, queue policy
-├── s3.yml            # Input/output buckets, IAM role
-├── dynamodb.yml      # Files table (userId PK + fileId SK)
-├── cognito.yml       # User Pool, App Client, Hosted UI domain
-├── ssm.yml           # All SSM parameters (bucket names, queue URL, etc.)
-├── alb.yml           # Application Load Balancer, Target Group, Listener
-└── ecs.yml           # ECS Cluster, Task Definitions, Services (API + Worker)
-```
- 
-**Deployment order:**
-```
-network → sqs → s3 → dynamodb → cognito → ssm → alb → ecs
-```
- 
+
 ### Network topology
 ```
 VPC: 10.0.0.0/16
@@ -197,10 +165,89 @@ VPC: 10.0.0.0/16
 ├── Public Subnet B  (10.0.2.0/24)  ── ALB (multi-AZ)
 ├── Private Subnet A (10.0.3.0/24)  ── ECS API + Worker
 └── Private Subnet B (10.0.4.0/24)  ── ECS API + Worker (multi-AZ)
+
+ECS tasks run in **private subnets** — never exposed directly to the internet. All inbound traffic flows through the ALB. Outbound internet access is via **NAT Gateway**.
+ ```
+
+---
+
+## Database Schema (Amazon DynamoDB)
+
+The system utilizes a **Single-Table Design** strategy to manage file metadata with high efficiency and low latency, optimized for per-user queries.
+
+**Table Definition:**
+- **Partition Key (PK):** `userId` (String) — Enables efficient per-user data isolation (Cognito `sub`).
+- **Sort Key (SK):** `fileId` (String) — Unique identifier (UUID) for each file record.
+
+| Attribute | Type | Description |
+| :--- | :--- | :--- |
+| `userId` | `String` | Unique identifier from Cognito (`sub` claim) |
+| `fileId` | `String` | Unique UUID for the file record |
+| `fileName` | `String` | Original name of the uploaded file |
+| `s3Key` | `String` | S3 Path (e.g., `output/user18/file.pdf`) |
+| `status` | `String` | `PENDING`, `PROCESSING`, `COMPLETED`, `FAILED`, `DELETED` |
+| `sizeInBytes`| `Number` | File size for validation and metadata |
+| `uploadDate` | `String` | ISO-8601 timestamp of creation |
+| `updatedAt`  | `String` | ISO-8601 timestamp of last status change |
+
+---
+
+### Example Item (JSON)
+```json
+{
+  "userId": "user_12345",
+  "fileId": "550e8400-e29b-41d4-a716-446655440000",
+  "fileName": "monthly-report.pdf",
+  "s3Key": "output/user_12345/550e8400-monthly-report.pdf",
+  "status": "COMPLETED",
+  "sizeInBytes": 10240,
+  "uploadDate": "2026-03-26T14:30:00Z",
+  "updatedAt": "2026-03-26T14:32:15Z"
+}
+```
+
+---
+
+## Infrastructure as Code (AWS)
+
+The entire infrastructure is provisioned using **AWS CloudFormation**, following a modular stack approach for better maintainability and decoupled deployments.
+
+| Component | Service | CloudFormation Stack | Role |
+| :--- | :--- | :--- | :--- |
+| **Network** | VPC | `network.yml` | Isolation with public/private subnets and NAT Gateway. |
+| **Auth** | Cognito | `cognito.yml` | User Pool, App Client, and Hosted UI for JWT authentication. |
+| **Storage** | S3 | `s3.yml` | Input and Output buckets with lifecycle and IAM policies. |
+| **Database** | DynamoDB | `dynamodb.yml` | Single-table design for file metadata (userId PK + fileId SK). |
+| **Messaging** | SQS | `sqs.yml` | Async queue with Dead Letter Queue (DLQ) for processing. |
+| **Compute** | ECS Fargate | `ecs.yml` | Serverless container orchestration for API and Worker services. |
+| **Traffic** | ALB | `alb.yml` | Application Load Balancer as the secure public entry point. |
+| **Config** | SSM | `ssm.yml` | Centralized Parameter Store for environment variables. |
+| **Registry** | ECR | *(Manual/CI)* | Private registry for Docker container images. |
+| **Logging** | CloudWatch | *(Integrated)* | Centralized logs and performance monitoring. |
+
+---
+
+
+### Deployment Order
+```
+To respect resource dependencies, the stacks must be deployed in this sequence:
+`network` → `sqs` → `s3` → `dynamodb` → `cognito` → `ssm` → `alb` → `ecs`
 ```
  
-ECS tasks run in **private subnets** — never exposed directly to the internet. All inbound traffic flows through the ALB. Outbound internet access is via **NAT Gateway**.
- 
+---
+
+## Observability & Quality
+
+To ensure system reliability and maintainability, the following practices were implemented:
+
+- **Logging & Tracing:** Centralized logging using **Amazon CloudWatch**. Application logs are formatted in JSON for structured analysis, with custom correlation IDs to trace requests across the API and Worker.
+- **Monitoring:** CloudWatch Metrics and Alarms are used to monitor **SQS Queue depth** (to trigger scaling) and **ECS CPU/Memory** utilization.
+- **Resilience:** - **Dead Letter Queues (DLQ):** Messages that fail after 3 retries are moved to a DLQ for manual inspection.
+    - **Graceful Shutdown:** ECS tasks handle termination signals to complete processing before stopping.
+- **Testing Strategy:** - **Unit Tests:** High coverage of business logic using **JUnit 5** and **Mockito**.
+    - **Integration Tests:** Validation of S3 and DynamoDB interactions.
+- **Error Handling:** Standardized API responses using `@ControllerAdvice` and custom exceptions (e.g., `OperationException`) to ensure clear error communication.
+
 ---
  
 ## API Endpoints
@@ -218,6 +265,15 @@ Base URL: `http://<alb-dns>/api/v1`
 | `GET` | `/files/history` | Full file history including deleted | `200 List<FileListResponse>` |
 | `GET` | `/files/{fileId}` | Get pre-signed download URL for a file | `200 FileDownloadResponse` |
 | `DELETE` | `/files/{fileId}` | Soft-delete in DynamoDB + hard-delete in S3 | `204 No Content` |
+
+### Admin Endpoints
+
+| Method | Endpoint | Description | Response |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/admin/users` | List all unique user IDs in the system | `200 List<String>` |
+| `GET` | `/admin/users/{userId}` | List all files belonging to a specific user | `200 List<FileListResponse>` |
+| `POST` | `/admin/{fileId}/reprocess` | Force a manual re-trigger of file processing | `200 OK` |
+| `DELETE` | `/admin/{fileId}` | Administrative hard-delete of a specific file | `204 No Content` |
  
 ### Authentication (Cognito Hosted UI)
  
