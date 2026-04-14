@@ -44,6 +44,7 @@ class AdminFileControllerTest {
     private static final String DELETE_FILE = "/api/v1/admin/files/{fileId}";
 
     //Bug fixed 2
+    //Bug fixed
 
     @Autowired
     private MockMvc mockMvc;
