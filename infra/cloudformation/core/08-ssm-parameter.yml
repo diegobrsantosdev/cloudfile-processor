@@ -53,7 +53,7 @@ Resources:
       Name: !Sub "/${ProjectName}/${EnvironmentName}/s3/input-bucket-name"
       Type: String
       Value: !ImportValue
-        Fn::Sub: "${InputBucketExportName}"
+        Fn::Sub: "${ProjectName}-s3-${EnvironmentName}-InputBucketName"
       Description: Input bucket name
 
   OutputBucketNameParameter:
@@ -62,7 +62,7 @@ Resources:
       Name: !Sub "/${ProjectName}/${EnvironmentName}/s3/output-bucket-name"
       Type: String
       Value: !ImportValue
-        Fn::Sub: "${OutputBucketExportName}"
+        Fn::Sub: "${ProjectName}-s3-${EnvironmentName}-OutputBucketName"
       Description: Output bucket name
 
   CallbackUrlParameter:
@@ -106,14 +106,16 @@ Resources:
       Value: !Sub
         - "https://cognito-idp.${Region}.amazonaws.com/${UserPoolId}"
         - Region: !Ref AwsRegion
-          UserPoolId: !ImportValue file-processor-cognito-dev-CognitoUserPoolId
+          UserPoolId: !ImportValue
+            Fn::Sub: "${ProjectName}-cognito-${EnvironmentName}-CognitoUserPoolId"
 
   CognitoClientIdParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Name: !Sub "/${ProjectName}/${EnvironmentName}/cognito/client-id"
       Type: String
-      Value: !ImportValue file-processor-cognito-dev-CognitoAppClientId
+      Value: !ImportValue
+        Fn::Sub: "${ProjectName}-cognito-${EnvironmentName}-CognitoAppClientId"
 
   FilesTableNameParameter:
     Type: AWS::SSM::Parameter

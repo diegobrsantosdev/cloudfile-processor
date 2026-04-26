@@ -372,29 +372,29 @@ Deploy in order:
 ```bash
 # 1. Network
 aws cloudformation deploy \
-  --template-file cloudformation/network.yml \
+  --template-file cloudformation/01-01-network.yml \
   --stack-name file-processor-network-dev
  
 # 2. SQS
 aws cloudformation deploy \
-  --template-file cloudformation/sqs.yml \
+  --template-file cloudformation/05-sqs.yml \
   --stack-name file-processor-sqs-dev \
   --parameter-overrides InputBucketArn=<input-bucket-arn>
  
 # 3. S3
 aws cloudformation deploy \
-  --template-file cloudformation/s3.yml \
+  --template-file cloudformation/06-s3.yml \
   --stack-name file-processor-s3-dev \
   --capabilities CAPABILITY_NAMED_IAM
  
 # 4. DynamoDB
 aws cloudformation deploy \
-  --template-file cloudformation/dynamodb.yml \
+  --template-file cloudformation/03-dynamodb.yml \
   --stack-name file-processor-dynamodb-dev
  
 # 5. Cognito
 aws cloudformation deploy \
-  --template-file cloudformation/cognito.yml \
+  --template-file cloudformation/04-cognito.yml \
   --stack-name file-processor-cognito-dev
  
 # 6. SSM
@@ -407,12 +407,12 @@ aws cloudformation deploy \
  
 # 7. ALB
 aws cloudformation deploy \
-  --template-file cloudformation/alb.yml \
+  --template-file cloudformation/07-alb.yml \
   --stack-name file-processor-alb-dev
  
 # 8. ECS
 aws cloudformation deploy \
-  --template-file cloudformation/ecs.yml \
+  --template-file cloudformation/09-ecs.yml \
   --stack-name file-processor-ecs-dev \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \

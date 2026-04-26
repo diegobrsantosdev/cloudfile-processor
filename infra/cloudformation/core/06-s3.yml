@@ -31,7 +31,8 @@ Resources:
       NotificationConfiguration:
         QueueConfigurations:
           - Event: s3:ObjectCreated:*
-            Queue: !ImportValue file-processor-sqs-dev-QueueArn
+            Queue: !ImportValue
+              Fn::Sub: "${ProjectName}-sqs-${EnvironmentName}-QueueArn"
             Filter:
               S3Key:
                 Rules:
@@ -87,7 +88,6 @@ Resources:
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
-              # S3 - Input Bucket
               - Effect: Allow
                 Action:
                   - s3:PutObject
@@ -123,7 +123,8 @@ Resources:
                   - sqs:ReceiveMessage
                   - sqs:DeleteMessage
                   - sqs:GetQueueAttributes
-                Resource: !ImportValue file-processor-sqs-dev-QueueArn
+                Resource: !ImportValue
+                  Fn::Sub: "${ProjectName}-sqs-${EnvironmentName}-QueueArn"
 
               # DynamoDB
               - Effect: Allow
@@ -131,7 +132,8 @@ Resources:
                   - dynamodb:GetItem
                   - dynamodb:PutItem
                   - dynamodb:UpdateItem
-                Resource: !ImportValue file-processor-dynamodb-dev-FilesTableArn
+                Resource: !ImportValue
+                  Fn::Sub: "${ProjectName}-dynamodb-${EnvironmentName}-FilesTableArn"
 
 Outputs:
   InputBucketName:
