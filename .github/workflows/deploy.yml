@@ -1,0 +1,134 @@
+name: Deploy Full Stack
+
+on:
+  push:
+    branches: [main]
+
+env:
+  AWS_REGION: us-east-1
+  PROJECT_NAME: file-processor
+  ENVIRONMENT: dev
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 1 — ECR Setup & Docker Build
+  #
+  # Runs first because the ECS stack needs image URIs to deploy containers.
+  # This job:
+  #   1. Ensures the ECR repositories exist (creates them if they don't)
+  #   2. Builds both API and Worker Docker images from the multi-stage Dockerfile
+  #   3. Tags each image with a short Git SHA for traceability (e.g. :abc1234)
+  #      and also pushes a :latest tag for convenience
+  #   4. Exports the full image URIs so Job 2 can pass them to CloudFormation
+  # ─────────────────────────────────────────────────────────────────────────────
+  setup-and-build:
+    name: Setup ECR & Build Images
+    runs-on: ubuntu-latest
+
+    outputs:
+      api_uri: ${{ steps.meta.outputs.api_uri }}
+      worker_uri: ${{ steps.meta.outputs.worker_uri }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Deploy ECR stack in isolation before the main infra script.
+      # ECR repositories must exist before we can push Docker images to them.
+      # --no-fail-on-empty-changeset prevents the step from failing on re-runs
+      # when nothing has changed in the ECR template.
+      - name: Deploy ECR Stack
+        run: |
+          aws cloudformation deploy \
+            --template-file ./infra/cloudformation/core/02-ecr.yml \
+            --stack-name ${{ env.PROJECT_NAME }}-ecr-${{ env.ENVIRONMENT }} \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --no-fail-on-empty-changeset \
+            --parameter-overrides \
+              ProjectName=${{ env.PROJECT_NAME }} \
+              EnvironmentName=${{ env.ENVIRONMENT }}
+
+      # Authenticates the Docker CLI with ECR so we can push images.
+      # The registry URL is captured as an output for use in subsequent steps.
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Calculates the full image URIs using the ECR registry URL + a short Git SHA tag.
+      # Using a commit-based tag (instead of :latest only) makes it easy to trace
+      # which exact code version is running in ECS at any given time.
+      - name: Calculate Image URIs
+        id: meta
+        run: |
+          REGISTRY=${{ steps.ecr-login.outputs.registry }}
+          SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          echo "api_uri=${REGISTRY}/${{ env.PROJECT_NAME }}-api-${{ env.ENVIRONMENT }}:${SHA}" >> $GITHUB_OUTPUT
+          echo "worker_uri=${REGISTRY}/${{ env.PROJECT_NAME }}-worker-${{ env.ENVIRONMENT }}:${SHA}" >> $GITHUB_OUTPUT
+
+      # Builds the API image using the 'api' target from the multi-stage Dockerfile.
+      # Pushes both the SHA-tagged and :latest versions to ECR.
+      - name: Build & Push API
+        run: |
+          docker build --target api \
+            -t ${{ steps.meta.outputs.api_uri }} \
+            -t ${{ steps.ecr-login.outputs.registry }}/${{ env.PROJECT_NAME }}-api-${{ env.ENVIRONMENT }}:latest .
+          docker push --all-tags ${{ steps.ecr-login.outputs.registry }}/${{ env.PROJECT_NAME }}-api-${{ env.ENVIRONMENT }}
+
+      # Same as above but for the Worker image.
+      # The Worker uses a different entrypoint to disable the embedded Tomcat
+      # and run as a background message processor (see Dockerfile STAGE 4).
+      - name: Build & Push Worker
+        run: |
+          docker build --target worker \
+            -t ${{ steps.meta.outputs.worker_uri }} \
+            -t ${{ steps.ecr-login.outputs.registry }}/${{ env.PROJECT_NAME }}-worker-${{ env.ENVIRONMENT }}:latest .
+          docker push --all-tags ${{ steps.ecr-login.outputs.registry }}/${{ env.PROJECT_NAME }}-worker-${{ env.ENVIRONMENT }}
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 2 — Infrastructure Deployment
+  #
+  # Runs after Job 1 succeeds. Calls infra.sh which deploys all CloudFormation
+  # stacks in the correct dependency order:
+  #
+  #   01-network       → VPC, subnets, NAT Gateway
+  #   02-ecr           → ECR repositories (already up, no-op on re-run)
+  #   03-dynamodb      → Files metadata table
+  #   04-cognito       → User Pool, App Client, Post-Confirmation Lambda
+  #   05-sqs           → File processing queue + DLQ
+  #   06-s3            → Input/output buckets, S3→SQS notification, IAM App Role
+  #   07-alb           → Application Load Balancer, Target Group, Listener
+  #   08-ssm           → All app config values stored in Parameter Store
+  #   09-ecs           → ECS cluster, task definitions, API + Worker services
+  #
+  # The image URIs from Job 1 are injected as environment variables so infra.sh
+  # can pass them to the ECS stack as CloudFormation parameters.
+  # ─────────────────────────────────────────────────────────────────────────────
+  deploy-infra:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+    needs: setup-and-build
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Run Infra Script
+        run: |
+          cd infra/cloudformation
+          chmod +x infra.sh
+          ./infra.sh ${{ env.ENVIRONMENT }}
+        env:
+          API_IMAGE_URI: ${{ needs.setup-and-build.outputs.api_uri }}
+          WORKER_IMAGE_URI: ${{ needs.setup-and-build.outputs.worker_uri }}

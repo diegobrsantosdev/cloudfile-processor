@@ -14,10 +14,6 @@ Parameters:
       - staging
       - prod
 
-  InputBucketArn:
-    Type: String
-    Description: ARN of the input bucket, exported by the S3 stack
-
 Resources:
 
   FileProcessingQueue:
@@ -50,7 +46,7 @@ Resources:
             Resource: !GetAtt FileProcessingQueue.Arn
             Condition:
               ArnLike:
-                aws:SourceArn: !Ref InputBucketArn
+                aws:SourceArn: !Sub "arn:aws:s3:::${ProjectName}-input-${AWS::AccountId}-${EnvironmentName}"
 
 Outputs:
   FileProcessingQueueUrl:

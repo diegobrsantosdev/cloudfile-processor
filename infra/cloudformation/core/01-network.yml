@@ -201,40 +201,40 @@ Resources:
       SubnetId: !Ref PublicSubnetB
       RouteTableId: !Ref PublicRouteTable
 
-#  # NAT GATEWAY
-#
-#  NatElasticIp:
-#    Type: AWS::EC2::EIP
-#    DependsOn: AttachInternetGateway
-#    Properties:
-#      Domain: vpc
-#      Tags:
-#        - Key: Name
-#          Value: !Sub "${ProjectName}-${EnvironmentName}-nat-eip"
-#        - Key: Project
-#          Value: !Ref ProjectName
-#        - Key: Environment
-#          Value: !Ref EnvironmentName
-#        - Key: ManagedBy
-#          Value: cloudformation
-#
-#  NatGateway:
-#    Type: AWS::EC2::NatGateway
-#    DependsOn: AttachInternetGateway
-#    Properties:
-#      AllocationId: !GetAtt NatElasticIp.AllocationId
-#      SubnetId: !Ref PublicSubnetA
-#      Tags:
-#        - Key: Name
-#          Value: !Sub "${ProjectName}-${EnvironmentName}-nat"
-#        - Key: Project
-#          Value: !Ref ProjectName
-#        - Key: Environment
-#          Value: !Ref EnvironmentName
-#        - Key: ManagedBy
-#          Value: cloudformation
+   #NAT GATEWAY
 
-  # PRIVATE ROUTE TABLE
+  NatElasticIp:
+    Type: AWS::EC2::EIP
+    DependsOn: AttachInternetGateway
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-${EnvironmentName}-nat-eip"
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: ManagedBy
+          Value: cloudformation
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    DependsOn: AttachInternetGateway
+    Properties:
+      AllocationId: !GetAtt NatElasticIp.AllocationId
+      SubnetId: !Ref PublicSubnetA
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-${EnvironmentName}-nat"
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: ManagedBy
+          Value: cloudformation
+
+   #PRIVATE ROUTE TABLE
 
   PrivateRouteTable:
     Type: AWS::EC2::RouteTable
@@ -250,13 +250,13 @@ Resources:
         - Key: ManagedBy
           Value: cloudformation
 
-#  PrivateDefaultRoute:
-#    Type: AWS::EC2::Route
-#    DependsOn: NatGateway
-#    Properties:
-#      RouteTableId: !Ref PrivateRouteTable
-#      DestinationCidrBlock: 0.0.0.0/0
-#      NatGatewayId: !Ref NatGateway
+  PrivateDefaultRoute:
+    Type: AWS::EC2::Route
+    DependsOn: NatGateway
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
 
   PrivateSubnetARouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
@@ -277,17 +277,17 @@ Outputs:
     Export:
       Name: !Sub "${AWS::StackName}-VpcId"
 
-#  InternetGatewayId:
-#    Description: Internet Gateway ID
-#    Value: !Ref InternetGateway
-#    Export:
-#      Name: !Sub "${AWS::StackName}-InternetGatewayId"
-#
-#  NatGatewayId:
-#    Description: NAT Gateway ID
-#    Value: !Ref NatGateway
-#    Export:
-#      Name: !Sub "${AWS::StackName}-NatGatewayId"
+  InternetGatewayId:
+    Description: Internet Gateway ID
+    Value: !Ref InternetGateway
+    Export:
+      Name: !Sub "${AWS::StackName}-InternetGatewayId"
+
+  NatGatewayId:
+    Description: NAT Gateway ID
+    Value: !Ref NatGateway
+    Export:
+      Name: !Sub "${AWS::StackName}-NatGatewayId"
 
   PublicSubnetAId:
     Description: Public Subnet A ID
