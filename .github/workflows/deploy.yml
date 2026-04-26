@@ -8,6 +8,9 @@ env:
   AWS_REGION: us-east-1
   PROJECT_NAME: file-processor
   ENVIRONMENT: dev
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   # ─────────────────────────────────────────────────────────────────────────────
