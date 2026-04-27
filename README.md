@@ -39,7 +39,7 @@ CloudFile Processor solves the challenge of handling file uploads reliably at sc
 ### Backend
 | Technology | Purpose |
 |---|---|
-| Java 17 | Core language |
+| Java 21 | Core language |
 | Spring Boot 3 | Application framework |
 | Spring Security | Authentication & authorization |
 | AWS SDK v2 | S3, SQS, DynamoDB, SSM and CloudWatch integration |
