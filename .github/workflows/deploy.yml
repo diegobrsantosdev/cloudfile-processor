@@ -2,7 +2,7 @@ name: Deploy Full Stack
 
 on:
   push:
-    branches: [main]
+    branches: ["**"]
 
 env:
   AWS_REGION: us-east-1
