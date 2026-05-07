@@ -76,7 +76,7 @@ jobs:
           echo "worker_uri=${REGISTRY}/${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-worker:${SHA}" >> $GITHUB_OUTPUT
 
       # Builds the API image using the 'api' target from the multi-stage Dockerfile.
-      # Pushes both the SHA-tagged and :latest versions to ECR.
+      # Pushes both the SHA-tagged and :latest versions to ECR
       - name: Build & Push API
         run: |
           docker build --target api \
