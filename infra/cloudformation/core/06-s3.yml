@@ -135,6 +135,15 @@ Resources:
                 Resource: !ImportValue
                   Fn::Sub: "${ProjectName}-dynamodb-${EnvironmentName}-FilesTableArn"
 
+              # SSM Parameter Store
+              - Effect: Allow
+                Action:
+                  - ssm:GetParametersByPath
+                  - ssm:GetParameters
+                  - ssm:GetParameter
+                Resource:
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${EnvironmentName}/*"
+
 Outputs:
   InputBucketName:
     Description: Input bucket name
