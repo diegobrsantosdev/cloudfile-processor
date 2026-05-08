@@ -164,11 +164,11 @@ Resources:
             - Fn::ImportValue: !Sub "${ProjectName}-network-${EnvironmentName}-PrivateSubnetBId"
           SecurityGroups:
             - !Ref EcsSecurityGroup
-        LoadBalancers:
-          - ContainerName: api
-            ContainerPort: !Ref ApiContainerPort
-            TargetGroupArn:
-              Fn::ImportValue: !Sub "${ProjectName}-alb-${EnvironmentName}-ApiTargetGroupArn"
+      LoadBalancers:
+        - ContainerName: api
+          ContainerPort: !Ref ApiContainerPort
+          TargetGroupArn:
+            Fn::ImportValue: !Sub "${ProjectName}-alb-${EnvironmentName}-ApiTargetGroupArn"
 
   # ── SERVICE — WORKER ──
   WorkerService:
