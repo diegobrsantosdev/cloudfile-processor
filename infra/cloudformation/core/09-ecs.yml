@@ -107,6 +107,12 @@ Resources:
           Environment:
             - Name: SPRING_PROFILES_ACTIVE
               Value: !Ref EnvironmentName
+            - Name: MANAGEMENT_ENDPOINT_HEALTH_STATUS_HTTP-MAPPING_DOWN
+              Value: "200"
+            - Name: MANAGEMENT_HEALTH_SQS_ENABLED
+              Value: "false"
+            - Name: MANAGEMENT_HEALTH_DYNAMODB_ENABLED
+              Value: "false"
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -149,6 +155,7 @@ Resources:
       TaskDefinition: !Ref ApiTaskDefinition
       DesiredCount: 1
       LaunchType: FARGATE
+      HealthCheckGracePeriodSeconds: 240 # 4 minutos de folga total
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: DISABLED

@@ -62,6 +62,11 @@ public class FileProcessingWorker {
     private void markAsFailed(Message message) {
         try {
             SqsS3EventMessage event = objectMapper.readValue(message.body(), SqsS3EventMessage.class);
+
+            if (event == null || event.records() == null || event.records().isEmpty()) {
+                return;
+            }
+
             for (SqsS3EventMessage.Record record : event.records()) {
                 String s3Key = record.s3().object().key();
                 String[] parts = s3Key.split("/");
@@ -102,6 +107,11 @@ public class FileProcessingWorker {
 
     private void processMessage(Message message) throws Exception {
         SqsS3EventMessage event = objectMapper.readValue(message.body(), SqsS3EventMessage.class);
+
+        if (event == null || event.records() == null || event.records().isEmpty()) {
+            log.info("Skipping message: Body is null or contains no S3 records (likely a test event).");
+            return;
+        }
 
         for (SqsS3EventMessage.Record record : event.records()) {
             String s3Key = record.s3().object().key();

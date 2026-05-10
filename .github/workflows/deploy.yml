@@ -2,7 +2,7 @@ name: Deploy Full Stack
 
 on:
   push:
-    branches: [main]
+    branches: ["main"]
 
 env:
   AWS_REGION: us-east-1
@@ -71,17 +71,18 @@ jobs:
         run: |
           REGISTRY=${{ steps.ecr-login.outputs.registry }}
           SHA=$(echo ${{ github.sha }} | cut -c1-7)
-          echo "api_uri=${REGISTRY}/${{ env.PROJECT_NAME }}-api-${{ env.ENVIRONMENT }}:${SHA}" >> $GITHUB_OUTPUT
-          echo "worker_uri=${REGISTRY}/${{ env.PROJECT_NAME }}-worker-${{ env.ENVIRONMENT }}:${SHA}" >> $GITHUB_OUTPUT
+          # MUDANÇA AQUI: Invertido para bater com dev-api e dev-worker
+          echo "api_uri=${REGISTRY}/${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-api:${SHA}" >> $GITHUB_OUTPUT
+          echo "worker_uri=${REGISTRY}/${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-worker:${SHA}" >> $GITHUB_OUTPUT
 
       # Builds the API image using the 'api' target from the multi-stage Dockerfile.
-      # Pushes both the SHA-tagged and :latest versions to ECR.
+      # Pushes both the SHA-tagged and :latest versions to ECR
       - name: Build & Push API
         run: |
           docker build --target api \
             -t ${{ steps.meta.outputs.api_uri }} \
-            -t ${{ steps.ecr-login.outputs.registry }}/${{ env.PROJECT_NAME }}-api-${{ env.ENVIRONMENT }}:latest .
-          docker push --all-tags ${{ steps.ecr-login.outputs.registry }}/${{ env.PROJECT_NAME }}-api-${{ env.ENVIRONMENT }}
+            -t ${{ steps.ecr-login.outputs.registry }}/${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-api:latest .
+          docker push --all-tags ${{ steps.ecr-login.outputs.registry }}/${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-api
 
       # Same as above but for the Worker image.
       # The Worker uses a different entrypoint to disable the embedded Tomcat
@@ -90,8 +91,8 @@ jobs:
         run: |
           docker build --target worker \
             -t ${{ steps.meta.outputs.worker_uri }} \
-            -t ${{ steps.ecr-login.outputs.registry }}/${{ env.PROJECT_NAME }}-worker-${{ env.ENVIRONMENT }}:latest .
-          docker push --all-tags ${{ steps.ecr-login.outputs.registry }}/${{ env.PROJECT_NAME }}-worker-${{ env.ENVIRONMENT }}
+            -t ${{ steps.ecr-login.outputs.registry }}/${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-worker:latest .
+          docker push --all-tags ${{ steps.ecr-login.outputs.registry }}/${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-worker
 
   # ─────────────────────────────────────────────────────────────────────────────
   # JOB 2 — Infrastructure Deployment
