@@ -135,4 +135,4 @@ jobs:
           ./infra.sh ${{ env.ENVIRONMENT }}
         env:
           API_IMAGE_URI: ${{ needs.setup-and-build.outputs.api_uri }}
-          WORKER_IMAGE_URI: ${{ needs.setup-and-build.outputs.worker_uri }}git
+          WORKER_IMAGE_URI: ${{ needs.setup-and-build.outputs.worker_uri }}
