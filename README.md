@@ -8,16 +8,17 @@ Users upload files via pre-signed S3 URLs, which are processed asynchronously th
 ## Table of Contents
  
 - [Overview](#overview)
+- [Tech Stack](#tech-stack)
 - [Architecture](#architecture)
 - [Processing Pipeline](#processing-pipeline)
-- [Tech Stack](#tech-stack)
-- [Database Schema](#database-schema-amazon-dynamodb)
-- [Infrastructure as Code](#infrastructure-as-code-aws)
-- [Observability & Quality](#observability--quality)
 - [API Endpoints](#api-endpoints)
+- [API Testing](#api-testing)
+- [Database Schema (Amazon DynamoDB)](#database-schema-amazon-dynamodb)
+- [Infrastructure as Code (AWS)](#infrastructure-as-code-aws)
+- [Observability & Quality](#observability--quality)
 - [Security](#security)
-- [Environment Variables](#environment-variables)
-- [CloudFormation Stacks](#cloudformation-stacks)
+- [Environment Variables (Systems Manager)](#environment-variables-systems-manager)
+- [CI/CD & Automation](#cicd--automation)
 - [Author](#author)
  
 ---
@@ -105,8 +106,6 @@ CloudFile Processor solves the challenge of handling file uploads reliably at sc
 └─────────────────────────────────────────────────────────────────────┘
 ```
  
----
- 
 ## Processing Pipeline
  
 ```
@@ -143,10 +142,8 @@ Worker receives message
       
       │ (on failure: message returns to queue, max 3 retries → DLQ)
 ```
-
----
  
-**File status lifecycle:**
+### File status lifecycle:
  
 ```
 PENDING ──► PROCESSING ──► COMPLETED
@@ -156,8 +153,6 @@ PENDING ──► PROCESSING ──► COMPLETED
 COMPLETED or PENDING ──► DELETED  (user deletes file)
 ```
 
----
-
 ### Network topology
 ```
 VPC: 10.0.0.0/16
@@ -166,9 +161,86 @@ VPC: 10.0.0.0/16
 ├── Private Subnet A (10.0.3.0/24)  ── ECS API + Worker
 └── Private Subnet B (10.0.4.0/24)  ── ECS API + Worker (multi-AZ)
 
-ECS tasks run in **private subnets** — never exposed directly to the internet. All inbound traffic flows through the ALB. Outbound internet access is via **NAT Gateway**.
+ECS tasks run in **private subnets** — never exposed directly to the internet.
+All inbound traffic flows through the ALB. Outbound internet access is via **NAT Gateway**.
  ```
 
+---
+
+## API Endpoints
+ 
+Base URL: `http://<alb-dns>/api/v1`
+ 
+> Authentication: **Bearer Token** (AWS Cognito JWT) — all endpoints require a valid token.
+ 
+### Files
+ 
+| Method | Endpoint | Description | Response |
+|---|---|---|---|
+| `POST` | `/files` | Request a pre-signed upload URL | `200 FileUploadResponse` |
+| `GET` | `/files` | List active files for authenticated user | `200 List<FileListResponse>` |
+| `GET` | `/files/history` | Full file history including deleted | `200 List<FileListResponse>` |
+| `GET` | `/files/{fileId}` | Get pre-signed download URL for a file | `200 FileDownloadResponse` |
+| `DELETE` | `/files/{fileId}` | Soft-delete in DynamoDB + hard-delete in S3 | `204 No Content` |
+
+### Admin Endpoints
+
+| Method | Endpoint | Description | Response |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/admin/users` | List all unique user IDs in the system | `200 List<String>` |
+| `GET` | `/admin/users/{userId}` | List all files belonging to a specific user | `200 List<FileListResponse>` |
+| `POST` | `/admin/{fileId}/reprocess` | Force a manual re-trigger of file processing | `200 OK` |
+| `DELETE` | `/admin/{fileId}` | Administrative hard-delete of a specific file | `204 No Content` |
+ 
+<details>
+ 
+ <summary>📸 Click to view Postman evidences </summary>
+
+![Generate presigned URL](assets/Captura%20de%20tela%202026-05-13%20184717.png)
+
+![Send file](assets/Captura%20de%20tela%202026-05-13%20184736.png)
+  
+![List User Files](assets/Captura%20de%20tela%202026-05-12%20231607.png)
+
+![List Users](assets/Captura%20de%20tela%202026-05-12%20231548.png)
+
+</details>
+
+---
+
+## API Testing
+The project includes complete Postman collections to facilitate testing of all endpoints, including authentication flows.
+
+* [Download User API Collection](./assets/CloudFile-Processor%20%20%28User%20API%29.postman_collection.json)
+
+* [Download Admin API Collection](./assets/CloudFile-Processor%20-%20Admin%20API.postman_collection.json)
+
+> **Tip:** Import both the Collection file into Postman. Set the environment variables (like `base_url`) to match your deployment (Local or AWS) to start testing immediately.
+
+
+---
+ 
+### Request & Response Examples
+ 
+**POST `/api/v1/files`**
+```json
+// Request
+{
+  "originalFileName": "relatorio-marco.pdf",
+  "mimeType": "application/pdf",
+  "sizeInBytes": 10240
+}
+ 
+// Response 200
+{
+  "uploadId": "550e8400-e29b-41d4-a716-446655440000",
+  "s3Key": "input/user18/550e8400-relatorio-marco.pdf",
+  "preSignedUrl": "https://s3.amazonaws.com/...",
+  "expiresAt": "2026-03-26T15:30:00Z",
+  "status": "PENDING"
+}
+```
+ 
 ---
 
 ## Database Schema (Amazon DynamoDB)
@@ -189,6 +261,14 @@ The system utilizes a **Single-Table Design** strategy to manage file metadata w
 | `sizeInBytes`| `Number` | File size for validation and metadata |
 | `uploadDate` | `String` | ISO-8601 timestamp of creation |
 | `updatedAt`  | `String` | ISO-8601 timestamp of last status change |
+
+<details>
+ 
+ <summary>📸 Click to view DynamoDB evidence </summary>
+  
+   ![Dynamo item table](assets/Captura%20de%20tela%202026-05-12%20225210.png)
+
+</details>
 
 ---
 
@@ -225,8 +305,15 @@ The entire infrastructure is provisioned using **AWS CloudFormation**, following
 | **Registry** | ECR | *(Manual/CI)* | Private registry for Docker container images. |
 | **Logging** | CloudWatch | *(Integrated)* | Centralized logs and performance monitoring. |
 
----
+<details>
 
+  <summary>📸 Click to view CloudFormation evidence </summary>
+  
+  ![Stacks do CloudFormation](assets/Captura%20de%20tela%202026-05-10%20171330.png)
+
+</details>
+
+---
 
 ### Deployment Order
 ```
@@ -248,88 +335,40 @@ To ensure system reliability and maintainability, the following practices were i
     - **Integration Tests:** Validation of S3 and DynamoDB interactions.
 - **Error Handling:** Standardized API responses using `@ControllerAdvice` and custom exceptions (e.g., `OperationException`) to ensure clear error communication.
 
+<details>
+ 
+ <summary>📸 Click to view evidences </summary>
+  
+![CloudWatch Logs](assets/Captura%20de%20tela%202026-05-12%20224947.png)
+
+
+![Exceptions](assets/Captura%20de%20tela%202026-05-12%20205238.png)
+
+
+![Unit Tests](assets/Captura%20de%20tela%202026-05-12%20210018.png)
+
+</details>
+ 
 ---
- 
-## API Endpoints
- 
-Base URL: `http://<alb-dns>/api/v1`
- 
-> Authentication: **Bearer Token** (AWS Cognito JWT) — all endpoints require a valid token.
- 
-### Files
- 
-| Method | Endpoint | Description | Response |
-|---|---|---|---|
-| `POST` | `/files` | Request a pre-signed upload URL | `200 FileUploadResponse` |
-| `GET` | `/files` | List active files for authenticated user | `200 List<FileListResponse>` |
-| `GET` | `/files/history` | Full file history including deleted | `200 List<FileListResponse>` |
-| `GET` | `/files/{fileId}` | Get pre-signed download URL for a file | `200 FileDownloadResponse` |
-| `DELETE` | `/files/{fileId}` | Soft-delete in DynamoDB + hard-delete in S3 | `204 No Content` |
 
-### Admin Endpoints
-
-| Method | Endpoint | Description | Response |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/admin/users` | List all unique user IDs in the system | `200 List<String>` |
-| `GET` | `/admin/users/{userId}` | List all files belonging to a specific user | `200 List<FileListResponse>` |
-| `POST` | `/admin/{fileId}/reprocess` | Force a manual re-trigger of file processing | `200 OK` |
-| `DELETE` | `/admin/{fileId}` | Administrative hard-delete of a specific file | `204 No Content` |
- 
 ### Authentication (Cognito Hosted UI)
  
 | Flow | URL |
 |---|---|
 | Login | `https://<cognito-domain>.auth.<region>.amazoncognito.com/login` |
 | Token exchange | `POST /oauth2/token` |
- 
----
- 
-### Request & Response Examples
- 
-**POST `/api/v1/files`**
-```json
-// Request
-{
-  "originalFileName": "relatorio-marco.pdf",
-  "mimeType": "application/pdf",
-  "sizeInBytes": 10240
-}
- 
-// Response 200
-{
-  "uploadId": "550e8400-e29b-41d4-a716-446655440000",
-  "s3Key": "input/user18/550e8400-relatorio-marco.pdf",
-  "preSignedUrl": "https://s3.amazonaws.com/...",
-  "expiresAt": "2026-03-26T15:30:00Z",
-  "status": "PENDING"
-}
-```
- 
-**GET `/api/v1/files`**
-```json
-[
-  {
-    "fileId": "550e8400-e29b-41d4-a716-446655440000",
-    "s3Key": "output/user18/550e8400-relatorio-marco.pdf",
-    "fileName": "relatorio-marco.pdf",
-    "mimeType": "application/pdf",
-    "sizeInBytes": 10240,
-    "uploadDate": "2026-03-26T14:30:00Z",
-    "status": "COMPLETED"
-  }
-]
-```
- 
-**GET `/api/v1/files/{fileId}`**
-```json
-{
-  "fileId": "550e8400-e29b-41d4-a716-446655440000",
-  "fileName": "relatorio-marco.pdf",
-  "preSignedUrl": "https://s3.amazonaws.com/..."
-}
-```
- 
----
+
+<details>
+
+ <summary>📸 Click to view Cognito evidences </summary>
+  
+![Exchange Token](assets/Captura%20de%20tela%202026-05-12%20214836.png)
+
+
+
+![Cognito Users](assets/Captura%20de%20tela%202026-05-12%20230747.png)
+
+</details>
  
 ## Security
  
@@ -342,13 +381,8 @@ Base URL: `http://<alb-dns>/api/v1`
 - **Sensitive data:** Never exposed through API responses
  
 ---
-
  
-> The application uses AWS SSM Parameter Store for configuration. Make sure your environment has valid AWS credentials with `ssm:GetParameter` permissions.
- 
----
- 
-## Environment Variables
+## Environment Variables (Systems Manager)
  
 All configuration is loaded from **AWS SSM Parameter Store** at startup. The parameters follow the pattern `/{project}/{environment}/{service}/{key}`.
  
@@ -362,63 +396,39 @@ All configuration is loaded from **AWS SSM Parameter Store** at startup. The par
 | `/file-processor/dev/dynamodb/files-table-name` | DynamoDB table name |
 | `/file-processor/dev/cognito/callback-url` | Cognito callback URL |
 | `/file-processor/dev/cognito/logout-url` | Cognito logout URL |
+
+<details>
+  
+ <summary>📸 Click to view all parameters evidences </summary>
+  
+![Parameter Store](assets/Captura%20de%20tela%202026-05-12%20230149.png)
+
+</details>
  
 ---
  
-## CloudFormation Stacks
+## CI/CD & Automation
+
+The entire lifecycle of this project is automated via **GitHub Actions**, from Docker image builds to infrastructure provisioning on AWS. This ensures a reliable and reproducible deployment process.
+
+<details>
  
-Deploy in order:
- 
+ <summary>📸 Click to view deployment & infrastructure evidence</summary>
+
+  ### CI/CD Pipeline (GitHub Actions)
+  The `deploy.yml` workflow manages the build process, pushes images to **Amazon ECR**, and triggers stack updates.
+  
+  ![Workflow de CI/CD](assets/Captura%20de%20tela%202026-05-10%20182528.png)
+  > [🔗 View live execution on GitHub Actions](https://github.com/diegobrsantosdev/cloudfile-processor/actions/runs/25640656813)
+
+### Resource Management (Cleanup)
+To ensure cost efficiency and environment hygiene, I developed a custom automation script for a complete environment teardown. The script handles complex tasks such as recursively emptying S3 buckets and deleting CloudFormation stacks in the correct reverse-dependency order.
+
 ```bash
-# 1. Network
-aws cloudformation deploy \
-  --template-file cloudformation/01-01-network.yml \
-  --stack-name file-processor-network-dev
- 
-# 2. SQS
-aws cloudformation deploy \
-  --template-file cloudformation/05-sqs.yml \
-  --stack-name file-processor-sqs-dev \
-  --parameter-overrides InputBucketArn=<input-bucket-arn>
- 
-# 3. S3
-aws cloudformation deploy \
-  --template-file cloudformation/06-s3.yml \
-  --stack-name file-processor-s3-dev \
-  --capabilities CAPABILITY_NAMED_IAM
- 
-# 4. DynamoDB
-aws cloudformation deploy \
-  --template-file cloudformation/03-dynamodb.yml \
-  --stack-name file-processor-dynamodb-dev
- 
-# 5. Cognito
-aws cloudformation deploy \
-  --template-file cloudformation/04-cognito.yml \
-  --stack-name file-processor-cognito-dev
- 
-# 6. SSM
-aws cloudformation deploy \
-  --template-file cloudformation/ssm.yml \
-  --stack-name file-processor-ssm-dev \
-  --parameter-overrides \
-    InputBucketExportName=file-processor-s3-dev-InputBucketName \
-    OutputBucketExportName=file-processor-s3-dev-OutputBucketName
- 
-# 7. ALB
-aws cloudformation deploy \
-  --template-file cloudformation/07-alb.yml \
-  --stack-name file-processor-alb-dev
- 
-# 8. ECS
-aws cloudformation deploy \
-  --template-file cloudformation/09-ecs.yml \
-  --stack-name file-processor-ecs-dev \
-  --capabilities CAPABILITY_NAMED_IAM \
-  --parameter-overrides \
-    ApiImageUri=<ecr-api-image-uri> \
-    WorkerImageUri=<ecr-worker-image-uri>
+# Example usage of the automated cleanup script
+./scripts/cleanup-infrastructure.sh --env dev
 ```
+</details>
  
 ---
  
