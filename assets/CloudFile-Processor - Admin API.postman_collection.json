@@ -1,0 +1,166 @@
+{
+  "info": {
+    "_postman_id": "e1672417-d5b9-4369-802b-76c7c8550f64",
+    "name": "CloudFile-Processor - Admin API",
+    "description": "Endpoints exclusivos para moderação e suporte (Role: ADMIN)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "40084877"
+  },
+  "item": [
+    {
+      "name": "1. List all users",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/files/users",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "admin",
+            "files",
+            "users"
+          ]
+        },
+        "description": "Retorna uma lista com os IDs de todos os usuários que possuem arquivos no sistema."
+      },
+      "response": []
+    },
+    {
+      "name": "2. List user files",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/files/users/:userId",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "admin",
+            "files",
+            "users",
+            ":userId"
+          ],
+          "variable": [
+            {
+              "key": "userId",
+              "value": "cole-o-id-do-usuario-aqui",
+              "description": "ID do usuário que você deseja auditar"
+            }
+          ]
+        },
+        "description": "Retorna o histórico completo de arquivos de um usuário específico."
+      },
+      "response": []
+    },
+    {
+      "name": "3. Force reprocess",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/files/:fileId/reprocess",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "admin",
+            "files",
+            ":fileId",
+            "reprocess"
+          ],
+          "variable": [
+            {
+              "key": "fileId",
+              "value": "id-do-arquivo",
+              "description": "ID do arquivo que falhou ou precisa ser processado novamente"
+            }
+          ]
+        },
+        "description": "Comando administrativo para reenviar o arquivo para a fila de processamento."
+      },
+      "response": []
+    },
+    {
+      "name": "4. Delete file (Admin)",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/files/:fileId",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "admin",
+            "files",
+            ":fileId"
+          ],
+          "variable": [
+            {
+              "key": "fileId",
+              "value": "id-do-arquivo",
+              "description": "ID do arquivo a ser removido pelo moderador"
+            }
+          ]
+        },
+        "description": "Remove um arquivo do sistema (via GSI), independente de quem seja o dono."
+      },
+      "response": []
+    },
+    {
+      "name": "Change token (Admin)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "grant_type",
+              "value": "authorization_code",
+              "type": "text",
+              "uuid": "0a7fee5d-2c60-4e86-83c2-94a6ce192ea8"
+            },
+            {
+              "key": "client_id",
+              "value": "5rqjem6p8qic74880n3s9b72f5",
+              "type": "text",
+              "uuid": "d9dba121-3c90-49c3-9690-71595b67b0e4"
+            },
+            {
+              "key": "code",
+              "value": "",
+              "type": "text",
+              "uuid": "d1833ce9-e07f-4456-a228-7a24935cea75"
+            },
+            {
+              "key": "redirect_uri",
+              "value": "http://localhost:8080/login",
+              "type": "text",
+              "uuid": "46644b6a-ba99-446b-bc80-fe9831d8b4c0"
+            }
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ]
+}

@@ -1,0 +1,269 @@
+{
+  "info": {
+    "_postman_id": "0058cc90-8134-44cb-9f1c-1a8bf4071b62",
+    "name": "CloudFile-Processor  (User API)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "40084877"
+  },
+  "item": [
+    {
+      "name": "1. Generate URL",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJraWQiOiI5bmVNS2g4Y2hvYzAyZEVsSmdLRGhuYzZkcjZUZXF0SEJMaThHenhJUHFNPSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiJkNGY4YzRiOC0wMDQxLTcwMTYtNWJmYS1lZjRhYTdiNzNmMzkiLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtZWFzdC0xLmFtYXpvbmF3cy5jb21cL3VzLWVhc3QtMV8wN0Z4dGo0TVciLCJ2ZXJzaW9uIjoyLCJjbGllbnRfaWQiOiI1cnFqZW02cDhxaWM3NDg4MG4zczliNzJmNSIsIm9yaWdpbl9qdGkiOiI4M2JjYjhhNS04YjE4LTQ3ZmEtOTkzMC05YTlkZTU2NzFiZjciLCJ0b2tlbl91c2UiOiJhY2Nlc3MiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwiYXV0aF90aW1lIjoxNzc1MDY0NDUzLCJleHAiOjE3NzUwNjgwNTMsImlhdCI6MTc3NTA2NDQ1MywianRpIjoiMTEyNjJmMDItYTRhNS00ZjcxLThjYTAtOTkxOTk4ZGEzNDM3IiwidXNlcm5hbWUiOiJkNGY4YzRiOC0wMDQxLTcwMTYtNWJmYS1lZjRhYTdiNzNmMzkifQ.s1MXsTINvMqSplU46O77Jk71G0Nl1Geli7ZSsgQKTERX5YehlA-8tWUbrdb0Ej3Pn6pj8h2ybII-ZmWh1Zl1nQTa0wkOJC3XpvSXQB5fzgmDu9iIoU-vu3agt4KnoJC6mIdWE_5ELjW3O1D9zHvLz9kiFkVutwMqa6AEzyMWsP65Ob0ccogF3ICehlNP7SVj6CTr3QyUu5rcjmvn3T82bwc0Nkfn0sNAKXuvWUb3Uc5xbCOOfohmgzm_ny5V6UFt_ff-Koew65T0-cj2rV49XVNdgN6M-oYmoD2oh09bcb_278zqvrkOFkLTq2USw99G3E7rnabGLsdNVpqVUnLIkw",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"originalFileName\": \"dynamoenumtest\",\r\n  \"mimeType\": \"png\",\r\n  \"sizeInBytes\": 200\r\n\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/v1/files",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "v1",
+            "files"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "2. Send file",
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "body": {
+          "mode": "file",
+          "file": {
+            "src": "/C:/Users/Mauriceia/OneDrive/Pictures/57ff9f61-3ced-4bf0-9635-d4ec0b06f5ae.jpg"
+          }
+        },
+        "url": {
+          "raw": "https://file-processor-input-995595915194-dev.s3.amazonaws.com/input/e4c854a8-90a1-7025-03d6-382ee90b1ef3/66126062-3e75-4e26-bc95-42a0f1272628-newpctest?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20260507T222331Z&X-Amz-SignedHeaders=host&X-Amz-Credential=AKIA6PTREB65HCJXNWTQ%2F20260507%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=900&X-Amz-Signature=7176fbae14eba944ef7c4f1a88fb6d6b22b344e663a31fa8583a03c02ba77da7",
+          "protocol": "https",
+          "host": [
+            "file-processor-input-995595915194-dev",
+            "s3",
+            "amazonaws",
+            "com"
+          ],
+          "path": [
+            "input",
+            "e4c854a8-90a1-7025-03d6-382ee90b1ef3",
+            "66126062-3e75-4e26-bc95-42a0f1272628-newpctest"
+          ],
+          "query": [
+            {
+              "key": "X-Amz-Algorithm",
+              "value": "AWS4-HMAC-SHA256"
+            },
+            {
+              "key": "X-Amz-Date",
+              "value": "20260507T222331Z"
+            },
+            {
+              "key": "X-Amz-SignedHeaders",
+              "value": "host"
+            },
+            {
+              "key": "X-Amz-Credential",
+              "value": "AKIA6PTREB65HCJXNWTQ%2F20260507%2Fus-east-1%2Fs3%2Faws4_request"
+            },
+            {
+              "key": "X-Amz-Expires",
+              "value": "900"
+            },
+            {
+              "key": "X-Amz-Signature",
+              "value": "7176fbae14eba944ef7c4f1a88fb6d6b22b344e663a31fa8583a03c02ba77da7"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "3. List sent files",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{Token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/api/v1/files",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "v1",
+            "files"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "4. History",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJraWQiOiI5bmVNS2g4Y2hvYzAyZEVsSmdLRGhuYzZkcjZUZXF0SEJMaThHenhJUHFNPSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiJkNGY4YzRiOC0wMDQxLTcwMTYtNWJmYS1lZjRhYTdiNzNmMzkiLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtZWFzdC0xLmFtYXpvbmF3cy5jb21cL3VzLWVhc3QtMV8wN0Z4dGo0TVciLCJ2ZXJzaW9uIjoyLCJjbGllbnRfaWQiOiI1cnFqZW02cDhxaWM3NDg4MG4zczliNzJmNSIsIm9yaWdpbl9qdGkiOiI1MzdlMTViYi1kMmQ3LTQzMTUtOTIwMC1iNzZmZDM5MGJkNWYiLCJ0b2tlbl91c2UiOiJhY2Nlc3MiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwiYXV0aF90aW1lIjoxNzc1MDYyMzkxLCJleHAiOjE3NzUwNjU5OTEsImlhdCI6MTc3NTA2MjM5MSwianRpIjoiZTU2MWVlYjQtNTliOS00OGUzLWIwYjAtYTE0YWY5MGRiYTc3IiwidXNlcm5hbWUiOiJkNGY4YzRiOC0wMDQxLTcwMTYtNWJmYS1lZjRhYTdiNzNmMzkifQ.DthU_RRA-ARafEI1B4gvrqNamEKjGe6tFmfkoaRXfiYvK3TgdslpreY2eokCoLsXsYwQ9PdvbcDGlWYDjiDiGeO0NzQA-Et-0wq83bACHtvgdF6OMqvB2mKQ_w48ceNAGaZ7hgeqnWFEWMsa428JUC-TscE3AlZ50QmS62rRjgc_SsFN1Y21J9WLKr7guggBNm9efq-WniVUqUMrETaMclvw_eo6V33Gmb1H9KpPHoulwBPdLxZLSGG6Tscf4HL-zoR0EF4mgAdoSKimSNfOeuV14f3dXPpscVgG1emhEULnG5744jZjl2VVxtRzAsy4yh493WsDvWUOdHUhG5UEPw",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/api/v1/files/history",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "v1",
+            "files",
+            "history"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "5. Download file",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJraWQiOiI5bmVNS2g4Y2hvYzAyZEVsSmdLRGhuYzZkcjZUZXF0SEJMaThHenhJUHFNPSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiJkNGY4YzRiOC0wMDQxLTcwMTYtNWJmYS1lZjRhYTdiNzNmMzkiLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtZWFzdC0xLmFtYXpvbmF3cy5jb21cL3VzLWVhc3QtMV8wN0Z4dGo0TVciLCJ2ZXJzaW9uIjoyLCJjbGllbnRfaWQiOiI1cnFqZW02cDhxaWM3NDg4MG4zczliNzJmNSIsIm9yaWdpbl9qdGkiOiI1MzdlMTViYi1kMmQ3LTQzMTUtOTIwMC1iNzZmZDM5MGJkNWYiLCJ0b2tlbl91c2UiOiJhY2Nlc3MiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwiYXV0aF90aW1lIjoxNzc1MDYyMzkxLCJleHAiOjE3NzUwNjU5OTEsImlhdCI6MTc3NTA2MjM5MSwianRpIjoiZTU2MWVlYjQtNTliOS00OGUzLWIwYjAtYTE0YWY5MGRiYTc3IiwidXNlcm5hbWUiOiJkNGY4YzRiOC0wMDQxLTcwMTYtNWJmYS1lZjRhYTdiNzNmMzkifQ.DthU_RRA-ARafEI1B4gvrqNamEKjGe6tFmfkoaRXfiYvK3TgdslpreY2eokCoLsXsYwQ9PdvbcDGlWYDjiDiGeO0NzQA-Et-0wq83bACHtvgdF6OMqvB2mKQ_w48ceNAGaZ7hgeqnWFEWMsa428JUC-TscE3AlZ50QmS62rRjgc_SsFN1Y21J9WLKr7guggBNm9efq-WniVUqUMrETaMclvw_eo6V33Gmb1H9KpPHoulwBPdLxZLSGG6Tscf4HL-zoR0EF4mgAdoSKimSNfOeuV14f3dXPpscVgG1emhEULnG5744jZjl2VVxtRzAsy4yh493WsDvWUOdHUhG5UEPw",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/api/v1/files/8e949ac2-6f7a-454b-bc38-36bd45e73a43",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "v1",
+            "files",
+            "8e949ac2-6f7a-454b-bc38-36bd45e73a43"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "6. Delete file",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJraWQiOiI5bmVNS2g4Y2hvYzAyZEVsSmdLRGhuYzZkcjZUZXF0SEJMaThHenhJUHFNPSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiJkNGY4YzRiOC0wMDQxLTcwMTYtNWJmYS1lZjRhYTdiNzNmMzkiLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtZWFzdC0xLmFtYXpvbmF3cy5jb21cL3VzLWVhc3QtMV8wN0Z4dGo0TVciLCJ2ZXJzaW9uIjoyLCJjbGllbnRfaWQiOiI1cnFqZW02cDhxaWM3NDg4MG4zczliNzJmNSIsIm9yaWdpbl9qdGkiOiI1MzdlMTViYi1kMmQ3LTQzMTUtOTIwMC1iNzZmZDM5MGJkNWYiLCJ0b2tlbl91c2UiOiJhY2Nlc3MiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwiYXV0aF90aW1lIjoxNzc1MDYyMzkxLCJleHAiOjE3NzUwNjU5OTEsImlhdCI6MTc3NTA2MjM5MSwianRpIjoiZTU2MWVlYjQtNTliOS00OGUzLWIwYjAtYTE0YWY5MGRiYTc3IiwidXNlcm5hbWUiOiJkNGY4YzRiOC0wMDQxLTcwMTYtNWJmYS1lZjRhYTdiNzNmMzkifQ.DthU_RRA-ARafEI1B4gvrqNamEKjGe6tFmfkoaRXfiYvK3TgdslpreY2eokCoLsXsYwQ9PdvbcDGlWYDjiDiGeO0NzQA-Et-0wq83bACHtvgdF6OMqvB2mKQ_w48ceNAGaZ7hgeqnWFEWMsa428JUC-TscE3AlZ50QmS62rRjgc_SsFN1Y21J9WLKr7guggBNm9efq-WniVUqUMrETaMclvw_eo6V33Gmb1H9KpPHoulwBPdLxZLSGG6Tscf4HL-zoR0EF4mgAdoSKimSNfOeuV14f3dXPpscVgG1emhEULnG5744jZjl2VVxtRzAsy4yh493WsDvWUOdHUhG5UEPw",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/api/v1/files/8e949ac2-6f7a-454b-bc38-36bd45e73a43",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "v1",
+            "files",
+            "8e949ac2-6f7a-454b-bc38-36bd45e73a43"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Change token (User)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "grant_type",
+              "value": "authorization_code",
+              "type": "text",
+              "uuid": "743e27b7-cd8d-4adb-8be2-6254c6dd9468"
+            },
+            {
+              "key": "client_id",
+              "value": "5rqjem6p8qic74880n3s9b72f5",
+              "type": "text",
+              "uuid": "05318e07-e6f7-442a-a2fe-f32198a86d83"
+            },
+            {
+              "key": "code",
+              "value": "e0a3d8e5-4744-46bf-b09b-73a679057d65",
+              "type": "text",
+              "uuid": "8c9779cb-882e-42ba-aa3e-244439cdc88e"
+            },
+            {
+              "key": "redirect_uri",
+              "value": "http://localhost:8080/login",
+              "type": "text",
+              "uuid": "ed700407-20c1-4d86-8bc3-a21ccd1ab0c8"
+            }
+          ]
+        },
+        "url": {
+          "raw": "https://file-processor-995595915194-us-east-1-dev.auth.us-east-1.amazoncognito.com/oauth2/token",
+          "protocol": "https",
+          "host": [
+            "file-processor-995595915194-us-east-1-dev",
+            "auth",
+            "us-east-1",
+            "amazoncognito",
+            "com"
+          ],
+          "path": [
+            "oauth2",
+            "token"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
