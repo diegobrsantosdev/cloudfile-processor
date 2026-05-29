@@ -1,19 +1,17 @@
-# STAGE 1: Build (Maven with Java 21)
-FROM maven:3.9.6-eclipse-temurin-21 AS build
+# STAGE 1: Build (Maven with Java 25)
+FROM eclipse-temurin:25-jdk-alpine AS build
 WORKDIR /app
 
-# Copy pom.xml and download dependencies to leverage Docker cache
+RUN apk add --no-cache maven
+
 COPY pom.xml .
-RUN mvn dependency:go-offline
-
-# Copy source code and build the JAR file
+RUN mvn dependency:go-offline -q
 COPY src ./src
-RUN mvn clean package -DskipTests
+RUN mvn clean package -DskipTests -q
 
-# STAGE 2: Base Runtime Image (Lightweight JRE 21)
-FROM eclipse-temurin:21-jre-jammy AS base
+# STAGE 2: Base Runtime Image (Lightweight JRE 25)
+FROM eclipse-temurin:25-jre-alpine AS base
 WORKDIR /app
-# Copy the generated JAR from the build stage
 COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
 
