@@ -36,22 +36,26 @@ CloudFile Processor solves the challenge of handling file uploads reliably at sc
 ---
 
 ## Tech Stack
- 
+
 ### Backend
-| Technology | Purpose |
-|---|---|
-| Java 21 | Core language |
-| Spring Boot 3 | Application framework |
-| Spring Security | Authentication & authorization |
-| AWS SDK v2 | S3, SQS, DynamoDB, SSM and CloudWatch integration |
-| DynamoDB Enhanced Client | Type-safe DynamoDB operations |
-| AWS SSM | Centralized configuration and secret management |
-| Amazon CloudWatch | Centralized logging and observability |
-| JWT (Cognito) | Stateless authentication |
-| JUnit 5 + Mockito | Unit and integration testing |
-| Docker | Containerization |
-| Maven | Build tool |
- 
+
+| Technology | Version | Purpose |
+|---|---|---|
+| Java | 25 | Core language |
+| Spring Boot | 3.5.14 | Application framework |
+| Spring Security | 6.x | Authentication & authorization |
+| Spring Cloud AWS | 3.4.x | AWS service integration |
+| AWS SDK v2 | 2.x | S3, SQS, DynamoDB, SSM integration |
+| DynamoDB Enhanced Client | — | Type-safe DynamoDB operations |
+| AWS SSM Parameter Store | — | Centralized config management |
+| Amazon CloudWatch | — | Centralized logging and observability |
+| JWT (Cognito) | — | Stateless authentication |
+| springdoc OpenAPI | 2.8.17 | API documentation (Swagger UI) |
+| JUnit 5 + Mockito | — | Unit and integration testing |
+| Lombok | 1.18.46 | Boilerplate reduction |
+| Docker | — | Containerization (multi-stage build) |
+| Maven | 3.x | Build tool |
+
 ---
  
 ## Architecture
