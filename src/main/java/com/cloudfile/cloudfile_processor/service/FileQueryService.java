@@ -83,6 +83,13 @@ public class FileQueryService {
             throw new FileNotFoundException(fileId);
         }
 
+        // Only processed files are in the output bucket; any other status would
+        // produce a link to an object that does not exist yet.
+        if (metadata.getStatusEnum() != UploadStatus.COMPLETED) {
+            throw new IllegalStateException(
+                    "File is not ready for download yet. Current status: " + metadata.getStatus());
+        }
+
         String preSignedUrl = s3PresignedUrlService.generatePresignedDownloadUrl(metadata.getS3Key());
 
         return new FileDownloadResponse(

@@ -15,6 +15,8 @@ import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
 import software.amazon.awssdk.services.sqs.model.Message;
@@ -35,11 +37,14 @@ public class FileProcessingWorker {
     private final ObjectMapper objectMapper;
 
     // runs every 5 seconds
+    // One message at a time: each file must finish within the queue visibility timeout.
+    // With a batch of 10 large files processed sequentially, the last messages could
+    // become visible again before being deleted and be processed twice.
     @Scheduled(fixedDelay = 5000)
     public void pollMessages() {
         ReceiveMessageRequest receiveRequest = ReceiveMessageRequest.builder()
                 .queueUrl(sqsProperties.getQueueUrl())
-                .maxNumberOfMessages(10)
+                .maxNumberOfMessages(1)
                 .waitTimeSeconds(20) // long polling
                 .build();
 
@@ -130,15 +135,38 @@ public class FileProcessingWorker {
 
             log.info("Processing file: userId={} fileId={} s3Key={}", userId, fileId, s3Key);
 
+            // Idempotency: SQS delivers at least once, so the same message can arrive twice.
+            FileMetadata current = fileTable.getItem(Key.builder()
+                    .partitionValue(userId)
+                    .sortValue(fileId)
+                    .build());
+            if (current != null) {
+                String currentStatus = current.getStatus();
+                if (UploadStatus.COMPLETED.name().equals(currentStatus)
+                        || UploadStatus.DELETED.name().equals(currentStatus)) {
+                    log.info("[WORKER] Skipping fileId={} — already {}", fileId, currentStatus);
+                    continue;
+                }
+            }
+
             // update status to PROCESSING
             updateStatus(userId, fileId, UploadStatus.PROCESSING, null);
 
-            // copy from inputBucket to outputBucket
             String outputKey = s3Key.replace("input/", "output/");
-            copyToOutput(s3Key, outputKey);
 
-            // delete from inputbucket
-            deleteFromInput(s3Key);
+            if (objectExists(s3Properties.getInputBucketName(), s3Key)) {
+                // copy from inputBucket to outputBucket
+                copyToOutput(s3Key, outputKey);
+
+                // delete from inputbucket
+                deleteFromInput(s3Key);
+            } else if (objectExists(s3Properties.getOutputBucketName(), outputKey)) {
+                // A previous attempt copied and deleted the input but failed before
+                // marking the file as COMPLETED: finish the job instead of failing it.
+                log.warn("[WORKER] Input already moved for fileId={}, recovering from output", fileId);
+            } else {
+                throw new RuntimeException("File not found in input or output. s3Key=" + s3Key);
+            }
 
             // updates status for COMPLETED and updates bucket
             markAsCompleted(userId, fileId, outputKey);
@@ -182,6 +210,18 @@ public class FileProcessingWorker {
 
         fileTable.updateItem(metadata);
         log.info("[WORKER] Success: Status COMPLETED and Bucket updated for fileId={}", fileId);
+    }
+
+    private boolean objectExists(String bucket, String key) {
+        try {
+            s3Client.headObject(HeadObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .build());
+            return true;
+        } catch (NoSuchKeyException ex) {
+            return false;
+        }
     }
 
     private void copyToOutput(String sourceKey, String destKey) {

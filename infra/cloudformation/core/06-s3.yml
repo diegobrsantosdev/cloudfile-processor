@@ -150,6 +150,7 @@ Resources:
                   - sqs:ReceiveMessage
                   - sqs:DeleteMessage
                   - sqs:GetQueueAttributes
+                  - sqs:SendMessage # admin reprocessing puts the file back in the queue
                 Resource: !ImportValue
                   Fn::Sub: "${ProjectName}-sqs-${EnvironmentName}-QueueArn"
 
@@ -208,3 +209,5 @@ Outputs:
     Value: !GetAtt AppRole.Arn
     Export:
       Name: !Sub "${AWS::StackName}-AppRoleArn"
+
+      

@@ -70,7 +70,7 @@ class AdminFileControllerTest {
         when(fileQueryService.listAllUsers()).thenReturn(new ArrayList<>());
 
         mockMvc.perform(get(LIST_USERS)
-                .contentType("application/json"))
+                        .contentType("application/json"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isEmpty());
     }
@@ -121,7 +121,7 @@ class AdminFileControllerTest {
         when(fileQueryService.listAllFiles(any()))
                 .thenReturn(List.of(file1, file2));
 
-       mockMvc.perform(get(LIST_FILES, userId))
+        mockMvc.perform(get(LIST_FILES, userId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].uploadId").value("id1"))
                 .andExpect(jsonPath("$[1].uploadId").value("id2"))
@@ -163,15 +163,15 @@ class AdminFileControllerTest {
                 .forceReprocessByFileId(any());
 
         mockMvc.perform(post(REPROCESS_FILE, fileId)
-                .with(csrf()))
+                        .with(csrf()))
                 .andExpect(status().isNoContent());
-   }
+    }
 
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    @DisplayName("Should return 500 when trying to reprocess a deleted file")
-    public void shouldReturn500WhenReprocessDeletedFile() throws Exception {
+    @DisplayName("Should return 409 when trying to reprocess a deleted file")
+    public void shouldReturn409WhenReprocessDeletedFile() throws Exception {
 
         var fileId = "fileId";
         var metadata = new FileMetadata();
@@ -185,8 +185,8 @@ class AdminFileControllerTest {
                 .when(fileProcessingService).forceReprocessByFileId(any());
 
         mockMvc.perform(post(REPROCESS_FILE, fileId)
-                .with(csrf()))
-                .andExpect(status().isInternalServerError());
+                        .with(csrf()))
+                .andExpect(status().isConflict());
     }
 
     @Test
@@ -198,7 +198,7 @@ class AdminFileControllerTest {
         doNothing().when(fileDeleteService).deleteFileByFileId(any());
 
         mockMvc.perform(delete(DELETE_FILE, fileId)
-                .with(csrf()))
+                        .with(csrf()))
                 .andExpect(status().isNoContent());
     }
 
@@ -213,12 +213,12 @@ class AdminFileControllerTest {
                 .when(fileDeleteService).deleteFileByFileId(any());
 
         mockMvc.perform(delete(DELETE_FILE, fileId)
-                .with(csrf()))
+                        .with(csrf()))
                 .andExpect(status().isNotFound());
 
     }
 
-       @Test
+    @Test
     @WithMockUser(roles = "ADMIN")
     @DisplayName("Should return 500 when service throws exception")
     public void shouldReturn500WhenServiceFails() throws Exception {
@@ -235,5 +235,3 @@ class AdminFileControllerTest {
 
 
 }
-
-
