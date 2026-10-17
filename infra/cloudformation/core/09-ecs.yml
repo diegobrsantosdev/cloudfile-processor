@@ -70,6 +70,7 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
 
   # ── SECURITY GROUP DO ECS ──
+  # Inbound only from the ALB; the public IP of the tasks is only used for outbound traffic.
   EcsSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -147,6 +148,7 @@ Resources:
               awslogs-stream-prefix: worker
 
   # ── SERVICE — API ──
+  # Runs in the public subnets with a public IP (no NAT Gateway needed to reach ECR, SQS, SSM, etc.)
   ApiService:
     Type: AWS::ECS::Service
     Properties:
@@ -158,10 +160,10 @@ Resources:
       HealthCheckGracePeriodSeconds: 240 # 4 minutos de folga total
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
+          AssignPublicIp: ENABLED
           Subnets:
-            - Fn::ImportValue: !Sub "${ProjectName}-network-${EnvironmentName}-PrivateSubnetAId"
-            - Fn::ImportValue: !Sub "${ProjectName}-network-${EnvironmentName}-PrivateSubnetBId"
+            - Fn::ImportValue: !Sub "${ProjectName}-network-${EnvironmentName}-PublicSubnetAId"
+            - Fn::ImportValue: !Sub "${ProjectName}-network-${EnvironmentName}-PublicSubnetBId"
           SecurityGroups:
             - !Ref EcsSecurityGroup
       LoadBalancers:
@@ -181,10 +183,10 @@ Resources:
       LaunchType: FARGATE
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
+          AssignPublicIp: ENABLED
           Subnets:
-            - Fn::ImportValue: !Sub "${ProjectName}-network-${EnvironmentName}-PrivateSubnetAId"
-            - Fn::ImportValue: !Sub "${ProjectName}-network-${EnvironmentName}-PrivateSubnetBId"
+            - Fn::ImportValue: !Sub "${ProjectName}-network-${EnvironmentName}-PublicSubnetAId"
+            - Fn::ImportValue: !Sub "${ProjectName}-network-${EnvironmentName}-PublicSubnetBId"
           SecurityGroups:
             - !Ref EcsSecurityGroup
 
