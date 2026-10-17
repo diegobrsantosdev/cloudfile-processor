@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -73,6 +74,14 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(ex.getMessage(), null));
     }
 
+    // Method-level security (e.g. @PreAuthorize) throws inside the controller layer;
+    // without this handler it would fall into handleGeneric and become a 500.
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponse("Access denied", null));
+    }
+
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ErrorResponse> handleBadRequest(BadRequestException ex) {
         return ResponseEntity.badRequest()
@@ -97,9 +106,11 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(ex.getMessage(), null));
     }
 
+    // The operation is not allowed in the resource's current state
+    // (e.g. reprocessing a DELETED file): that is a conflict, not a server error.
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ErrorResponse> handleIllegalState(IllegalStateException ex) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(new ErrorResponse(ex.getMessage(), null));
     }
 

@@ -4,6 +4,8 @@ Description: >
   Network infrastructure for File Processor application.
   Creates a VPC with two public and two private subnets
   distributed across two Availability Zones.
+  No NAT Gateway: ECS tasks run in the public subnets with a public IP
+  (inbound traffic is still restricted to the ALB by security group).
 
 Parameters:
   ProjectName:
@@ -107,7 +109,6 @@ Resources:
         - Key: ManagedBy
           Value: cloudformation
 
-
   PublicSubnetB:
     Type: AWS::EC2::Subnet
     Properties:
@@ -127,7 +128,7 @@ Resources:
         - Key: ManagedBy
           Value: cloudformation
 
-  # PRIVATE SUBNETS
+  # PRIVATE SUBNETS (kept for future use; no internet route, no cost)
 
   PrivateSubnetA:
     Type: AWS::EC2::Subnet
@@ -201,40 +202,7 @@ Resources:
       SubnetId: !Ref PublicSubnetB
       RouteTableId: !Ref PublicRouteTable
 
-   #NAT GATEWAY
-
-  NatElasticIp:
-    Type: AWS::EC2::EIP
-    DependsOn: AttachInternetGateway
-    Properties:
-      Domain: vpc
-      Tags:
-        - Key: Name
-          Value: !Sub "${ProjectName}-${EnvironmentName}-nat-eip"
-        - Key: Project
-          Value: !Ref ProjectName
-        - Key: Environment
-          Value: !Ref EnvironmentName
-        - Key: ManagedBy
-          Value: cloudformation
-
-  NatGateway:
-    Type: AWS::EC2::NatGateway
-    DependsOn: AttachInternetGateway
-    Properties:
-      AllocationId: !GetAtt NatElasticIp.AllocationId
-      SubnetId: !Ref PublicSubnetA
-      Tags:
-        - Key: Name
-          Value: !Sub "${ProjectName}-${EnvironmentName}-nat"
-        - Key: Project
-          Value: !Ref ProjectName
-        - Key: Environment
-          Value: !Ref EnvironmentName
-        - Key: ManagedBy
-          Value: cloudformation
-
-   #PRIVATE ROUTE TABLE
+  # PRIVATE ROUTE TABLE (local traffic only; NAT Gateway removed to save cost)
 
   PrivateRouteTable:
     Type: AWS::EC2::RouteTable
@@ -249,14 +217,6 @@ Resources:
           Value: !Ref EnvironmentName
         - Key: ManagedBy
           Value: cloudformation
-
-  PrivateDefaultRoute:
-    Type: AWS::EC2::Route
-    DependsOn: NatGateway
-    Properties:
-      RouteTableId: !Ref PrivateRouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !Ref NatGateway
 
   PrivateSubnetARouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
@@ -282,12 +242,6 @@ Outputs:
     Value: !Ref InternetGateway
     Export:
       Name: !Sub "${AWS::StackName}-InternetGatewayId"
-
-  NatGatewayId:
-    Description: NAT Gateway ID
-    Value: !Ref NatGateway
-    Export:
-      Name: !Sub "${AWS::StackName}-NatGatewayId"
 
   PublicSubnetAId:
     Description: Public Subnet A ID

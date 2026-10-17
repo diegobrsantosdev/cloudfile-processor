@@ -97,3 +97,9 @@ Outputs:
     Value: !Ref ApiTargetGroup
     Export:
       Name: !Sub "${AWS::StackName}-ApiTargetGroupArn"
+
+  # Used by the front-end stack as the CloudFront origin for /api/*
+  LoadBalancerDNSName:
+    Value: !GetAtt ApplicationLoadBalancer.DNSName
+    Export:
+      Name: !Sub "${AWS::StackName}-LoadBalancerDNSName"
