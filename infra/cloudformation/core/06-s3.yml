@@ -136,6 +136,7 @@ Resources:
                 Action:
                   - s3:GetObject
                   - s3:PutObject
+                  - s3:DeleteObject
                 Resource: !Sub "${OutputBucket.Arn}/*"
 
               - Effect: Allow
@@ -152,14 +153,21 @@ Resources:
                 Resource: !ImportValue
                   Fn::Sub: "${ProjectName}-sqs-${EnvironmentName}-QueueArn"
 
-              # DynamoDB
+              # DynamoDB (table + its GSIs: UserIdIndex, fileId-index)
               - Effect: Allow
                 Action:
                   - dynamodb:GetItem
                   - dynamodb:PutItem
                   - dynamodb:UpdateItem
-                Resource: !ImportValue
-                  Fn::Sub: "${ProjectName}-dynamodb-${EnvironmentName}-FilesTableArn"
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - Fn::ImportValue: !Sub "${ProjectName}-dynamodb-${EnvironmentName}-FilesTableArn"
+                  - Fn::Join:
+                      - ""
+                      - - Fn::ImportValue: !Sub "${ProjectName}-dynamodb-${EnvironmentName}-FilesTableArn"
+                        - "/index/*"
 
               # SSM Parameter Store
               - Effect: Allow
