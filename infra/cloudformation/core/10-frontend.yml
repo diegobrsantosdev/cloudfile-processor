@@ -25,8 +25,6 @@ Mappings:
   ManagedPolicies:
     CachePolicy:
       CachingOptimized: 658327ea-f89d-4fab-a63d-7e88639e58f6
-    OriginRequestPolicy:
-      AllViewerExceptHostHeader: b689b0a8-53d0-40ab-baf2-68738e2966ac
 
 Resources:
 
@@ -126,6 +124,29 @@ Resources:
           QueryStringsConfig:
             QueryStringBehavior: all
 
+  # ── API ORIGIN REQUEST POLICY ──
+  # Forwards every viewer header to the API except:
+  #   - Host: the ALB expects its own host name.
+  #   - Origin: browsers send it on POST/DELETE even for same-origin calls.
+  #     Behind CloudFront the API sees the ALB host, so Spring would treat the
+  #     CloudFront origin as cross-origin and reject the request (CORS 403).
+  #     For the browser everything is one origin, so there is no real CORS here.
+  ApiOriginRequestPolicy:
+    Type: AWS::CloudFront::OriginRequestPolicy
+    Properties:
+      OriginRequestPolicyConfig:
+        Name: !Sub "${ProjectName}-${EnvironmentName}-api-origin-request"
+        Comment: All viewer headers except Host and Origin
+        HeadersConfig:
+          HeaderBehavior: allExcept
+          Headers:
+            - Host
+            - Origin
+        CookiesConfig:
+          CookieBehavior: none
+        QueryStringsConfig:
+          QueryStringBehavior: all
+
   # ── DISTRIBUTION ──
   Distribution:
     Type: AWS::CloudFront::Distribution
@@ -174,7 +195,7 @@ Resources:
               - DELETE
             Compress: true
             CachePolicyId: !Ref ApiCachePolicy
-            OriginRequestPolicyId: !FindInMap [ManagedPolicies, OriginRequestPolicy, AllViewerExceptHostHeader]
+            OriginRequestPolicyId: !Ref ApiOriginRequestPolicy
         ViewerCertificate:
           CloudFrontDefaultCertificate: true
       Tags:
@@ -209,3 +230,4 @@ Outputs:
     Value: !Sub "https://${Distribution.DomainName}"
     Export:
       Name: !Sub "${AWS::StackName}-FrontendUrl"
+
