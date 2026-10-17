@@ -23,6 +23,19 @@ Parameters:
     Type: String
     Default: http://localhost:8080/logout
 
+  LocalFrontendUrl:
+    Type: String
+    Default: http://localhost:4200/
+    Description: Angular dev server URL (login and logout while developing locally)
+
+  FrontendUrl:
+    Type: String
+    Default: ""
+    Description: Public URL of the front-end with trailing slash (e.g. https://d123.cloudfront.net/). Empty to skip.
+
+Conditions:
+  HasFrontendUrl: !Not [!Equals [!Ref FrontendUrl, ""]]
+
 Resources:
 
   MyUserPool:
@@ -74,8 +87,12 @@ Resources:
         - COGNITO
       CallbackURLs:
         - !Ref CallbackUrl
+        - !Ref LocalFrontendUrl
+        - !If [HasFrontendUrl, !Ref FrontendUrl, !Ref "AWS::NoValue"]
       LogoutURLs:
         - !Ref LogoutUrl
+        - !Ref LocalFrontendUrl
+        - !If [HasFrontendUrl, !Ref FrontendUrl, !Ref "AWS::NoValue"]
       TokenValidityUnits:
         RefreshToken: days
         AccessToken: minutes
@@ -136,7 +153,7 @@ Resources:
       FunctionName: !Sub "${ProjectName}-${EnvironmentName}-post-confirmation"
       Handler: index.lambda_handler
       Role: !GetAtt PostConfirmationLambdaRole.Arn
-      Runtime: python3.9
+      Runtime: python3.12
       Code:
         ZipFile: |
           import boto3
