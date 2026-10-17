@@ -1,9 +1,9 @@
 name: Deploy Full Stack
 
 on:
-  push:
-    branches:
-      - main
+  # Manual trigger only: GitHub > Actions > "Deploy Full Stack" > "Run workflow".
+  # A push to main does NOT deploy anymore, so an accidental commit can never
+  # recreate the infrastructure (and start billing again).
   workflow_dispatch:
 
 env:
@@ -102,15 +102,21 @@ jobs:
   # Runs after Job 1 succeeds. Calls infra.sh which deploys all CloudFormation
   # stacks in the correct dependency order:
   #
-  #   01-network       → VPC, subnets, NAT Gateway
+  #   01-network       → VPC, public/private subnets, Internet Gateway (no NAT Gateway)
   #   02-ecr           → ECR repositories (already up, no-op on re-run)
   #   03-dynamodb      → Files metadata table
-  #   04-cognito       → User Pool, App Client, Post-Confirmation Lambda
   #   05-sqs           → File processing queue + DLQ
-  #   06-s3            → Input/output buckets, S3→SQS notification, IAM App Role
   #   07-alb           → Application Load Balancer, Target Group, Listener
+  #   10-frontend      → CloudFront (Angular app from S3 + /api/* to the ALB)
+  #   04-cognito       → User Pool, App Client, Post-Confirmation Lambda
+  #                      (login/logout URLs include the CloudFront URL)
+  #   06-s3            → Input/output buckets, S3→SQS notification, IAM App Role
+  #                      (upload CORS allows the CloudFront origin)
   #   08-ssm           → All app config values stored in Parameter Store
   #   09-ecs           → ECS cluster, task definitions, API + Worker services
+  #                      (tasks run in the public subnets, reachable only through the ALB)
+  #
+  # The Angular app itself is published by the deploy workflow of the front-end repository.
   #
   # The image URIs from Job 1 are injected as environment variables so infra.sh
   # can pass them to the ECS stack as CloudFormation parameters.
