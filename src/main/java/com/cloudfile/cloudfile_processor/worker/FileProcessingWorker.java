@@ -11,7 +11,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
+import software.amazon.awssdk.enhanced.dynamodb.model.UpdateItemEnhancedRequest;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
@@ -28,6 +32,14 @@ import java.util.List;
 @Slf4j
 @AllArgsConstructor
 public class FileProcessingWorker {
+
+    // Every status write is conditional: if the user deleted the file while it was
+    // being processed, DynamoDB rejects the write instead of bringing the file back.
+    private static final Expression NOT_DELETED = Expression.builder()
+            .expression("#st <> :deleted")
+            .putExpressionName("#st", "status")
+            .putExpressionValue(":deleted", AttributeValue.fromS(UploadStatus.DELETED.name()))
+            .build();
 
     private final SqsClient sqsClient;
     private final S3Client s3Client;
@@ -99,8 +111,11 @@ public class FileProcessingWorker {
                 FileMetadata metadata = fileTable.getItem(key);
                 if (metadata != null) {
                     metadata.setStatus(UploadStatus.FAILED.name());
-                    fileTable.putItem(metadata);
-                    log.info("Marked fileId={} as FAILED", fileId);
+                    if (updateIfNotDeleted(metadata)) {
+                        log.info("Marked fileId={} as FAILED", fileId);
+                    } else {
+                        log.info("fileId={} was deleted by the user, not marking as FAILED", fileId);
+                    }
                 } else {
                     log.warn("Could not mark as FAILED — metadata not found for fileId={}", fileId);
                 }
@@ -150,7 +165,10 @@ public class FileProcessingWorker {
             }
 
             // update status to PROCESSING
-            updateStatus(userId, fileId, UploadStatus.PROCESSING, null);
+            if (!updateStatus(userId, fileId, UploadStatus.PROCESSING)) {
+                log.info("[WORKER] Skipping fileId={} — deleted before processing started", fileId);
+                continue;
+            }
 
             String outputKey = s3Key.replace("input/", "output/");
 
@@ -169,13 +187,20 @@ public class FileProcessingWorker {
             }
 
             // updates status for COMPLETED and updates bucket
-            markAsCompleted(userId, fileId, outputKey);
+            if (!markAsCompleted(userId, fileId, outputKey)) {
+                // The user deleted the file while it was being copied: honour the deletion
+                // and remove the copy so no orphan object is left in the output bucket.
+                log.info("[WORKER] fileId={} deleted during processing, removing output copy", fileId);
+                deleteFromOutput(outputKey);
+                continue;
+            }
 
             log.info("File processed successfully: fileId={}", fileId);
         }
     }
 
-    private void updateStatus(String userId, String fileId, UploadStatus status, String outputKey) {
+    /** Returns false when the file was deleted in the meantime. */
+    private boolean updateStatus(String userId, String fileId, UploadStatus status) {
 
         Key key = Key.builder()
                 .partitionValue(userId)
@@ -188,12 +213,16 @@ public class FileProcessingWorker {
         }
 
         metadata.setStatus(status.name());
-        fileTable.updateItem(metadata);
+        if (!updateIfNotDeleted(metadata)) {
+            return false;
+        }
 
         log.info("Updated status for fileId={} to {}", fileId, status);
+        return true;
     }
 
-    private void markAsCompleted(String userId, String fileId, String outputKey) {
+    /** Returns false when the file was deleted in the meantime. */
+    private boolean markAsCompleted(String userId, String fileId, String outputKey) {
         Key key = Key.builder()
                 .partitionValue(userId)
                 .sortValue(fileId)
@@ -208,8 +237,24 @@ public class FileProcessingWorker {
         metadata.setS3Key(outputKey);
         metadata.setBucket(s3Properties.getOutputBucketName());
 
-        fileTable.updateItem(metadata);
+        if (!updateIfNotDeleted(metadata)) {
+            return false;
+        }
         log.info("[WORKER] Success: Status COMPLETED and Bucket updated for fileId={}", fileId);
+        return true;
+    }
+
+    /** Writes the item only if its current status is not DELETED. */
+    private boolean updateIfNotDeleted(FileMetadata metadata) {
+        try {
+            fileTable.updateItem(UpdateItemEnhancedRequest.builder(FileMetadata.class)
+                    .item(metadata)
+                    .conditionExpression(NOT_DELETED)
+                    .build());
+            return true;
+        } catch (ConditionalCheckFailedException ex) {
+            return false;
+        }
     }
 
     private boolean objectExists(String bucket, String key) {
@@ -250,6 +295,18 @@ public class FileProcessingWorker {
             s3Client.deleteObject(deleteRequest);
         } catch (Exception ex) {
             throw new RuntimeException("Failed to delete file from input bucket. s3Key=" + s3Key, ex);
+        }
+    }
+
+    private void deleteFromOutput(String outputKey) {
+        try {
+            s3Client.deleteObject(DeleteObjectRequest.builder()
+                    .bucket(s3Properties.getOutputBucketName())
+                    .key(outputKey)
+                    .build());
+        } catch (Exception ex) {
+            // Not fatal: the file is already DELETED for the user, only storage is left behind.
+            log.error("Failed to remove output copy of deleted file. key={}", outputKey, ex);
         }
     }
 
